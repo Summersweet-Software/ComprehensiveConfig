@@ -1,3 +1,5 @@
+from enum import Enum
+
 from comprehensiveconfig import ConfigSpec
 from comprehensiveconfig.json import JsonWriter
 from comprehensiveconfig.spec import (
@@ -8,12 +10,18 @@ from comprehensiveconfig.spec import (
     Float,
     Text,
     List,
+    ConfigEnum
 )
 from comprehensiveconfig.toml import TomlWriter
 
 
 class Example(TableSpec):
     x = Integer(10)
+
+
+class testEnum(Enum):
+    foo = "burger"
+    bar = "chicken"
 
 
 class MyConfigSpec(ConfigSpec,
@@ -40,6 +48,7 @@ class MyConfigSpec(ConfigSpec,
     example_list_field = List(
         ["12", "13", "14", 22], inner_type=Text(regex=r"[0-9]*") | Integer()
     )
+    test_enum = ConfigEnum(testEnum, testEnum.foo)
     model_example = Example()
     list_of_models = List([{"x": 12}, {"x": 12}], inner_type=Example())
     list_of_sections: Table[str, Credentials | int] = Table(
@@ -69,3 +78,7 @@ print(MyConfigSpec.some_field)
 print(MyConfigSpec.MySection.other_field)
 MyConfigSpec._INST.save("test.toml", TomlWriter)
 MyConfigSpec._INST.save("test.json", JsonWriter)
+
+
+print(testEnum.foo, type(testEnum.foo))
+print(dir(testEnum), testEnum.__members__)

@@ -20,6 +20,10 @@ class JsonWriter(configio.ConfigurationWriter):
                 return cls.dump_section(value)
             case spec.Table(_, type() | spec.Section() | spec.ConfigUnion()):
                 return {cls.dump_value(key, key): cls.dump_value(val, val) for key, val in value.items()}
+            case spec.ConfigEnum(_, True):
+                return value.name
+            case spec.ConfigEnum(_, False):
+                return value.value
             case _:
                 return value
 

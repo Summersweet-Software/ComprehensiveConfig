@@ -1,4 +1,5 @@
 from abc import ABC, ABCMeta, abstractmethod
+import enum
 import re
 from types import UnionType
 import types
@@ -598,6 +599,64 @@ class ConfigUnion[L, R](ConfigurationField):
             self._right_type._validate_value(value, name)
 
 
+class ConfigEnum[T](ConfigurationField):
+    """enumeration field"""
+
+    __slots__ = ("_enum", "_enum_members_reversed", "_by_name")
+    __match_args__ = ("_enum", "_by_name")
+
+    _holds: T
+
+    _enum: Type[T]
+    '''The enumeration type'''
+    _enum_members_reversed: dict[Any, T]
+    '''A reversed mapping of values  and enum variants in the enumeration type'''
+    _by_name: bool
+    '''whether or not the field value is using the
+       enum variants' name or value'''
+
+    def __init__(
+        self,
+        enum_type: Type[T],
+        default_value: T | _NoDefaultValueT = NoDefaultValue,
+        /,
+        *args,
+        by_name=False,
+        **kwargs,
+    ):
+        self._enum = enum_type
+        if not isinstance(enum_type, enum.EnumMeta):
+            raise ValueError("Type must be an enumerator")
+        self._enum_members_reversed = {v.value: v for v in enum_type.__members__.values()}
+        self._by_name = by_name
+
+        return super().__init__(default_value, *args, **kwargs)
+
+    def get_value(self, value: Any):
+        if self._by_name:
+            if value not in self._enum.__members__.keys():
+                raise ValueError(f"Invalid Enum Variant: {value}")
+            return self._enum.__members__[value]
+        if value not in self._enum_members_reversed.keys():
+            raise ValueError(f"Invalid Enum Variant: {value}")
+        return self._enum_members_reversed[value]
+    
+    def __call__(self, value: Any):
+        return self.get_value(value)
+
+    def __get__(self, instance, owner) -> T:
+        return super().__get__(instance, owner)
+
+    def __set__(self, instance, value: T | Any):
+        if isinstance(value, self._enum):
+            return super().__set__(instance, value)
+        super().__set__(instance, self.get_value(value))
+
+    def _validate_value(self, value: Any, name: str | None = None, /):
+        super()._validate_value(value)
+        self.get_value(value)
+
+
 __all__ = [
     "ConfigurationField",
     "NoDefaultValue",
@@ -610,4 +669,5 @@ __all__ = [
     "Table",
     "TableSpec",
     "List",
+    "ConfigEnum"
 ]

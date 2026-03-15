@@ -1,3 +1,4 @@
+import enum
 import tomllib
 from . import configio
 from . import spec
@@ -65,6 +66,8 @@ class TomlWriter(configio.ConfigurationWriter):
                 return f"[{", ".join([str(cls.format_value(inner_val)) for inner_val in value])}]"
             case dict():
                 return f"{{ {", ".join([f"{key} = {cls.format_value(inner_val)}" for key, inner_val in value.items()])} }}"
+            case enum.Enum():
+                return f"{cls.format_value(value.value)}"
             case _:
                 raise ValueError(value)
 
@@ -87,6 +90,10 @@ class TomlWriter(configio.ConfigurationWriter):
                 return f"\n[{section_name}]\n{"\n".join(cls.dumps(val) if isinstance(val, spec.Section) else cls.dump_field(val, key, key, val) for key, val in value.items())}"
             case spec.Section():
                 return "\n".join(cls.dump_section(node))
+            case spec.ConfigEnum(_, True):
+                if isinstance(value, spec.Section):
+                    return "\n".join(cls.dump_section(value))
+                return f"{field_name} = {cls.format_value(value.name)}"
             case _:
                 if isinstance(value, spec.Section):
                     return "\n".join(cls.dump_section(value))
