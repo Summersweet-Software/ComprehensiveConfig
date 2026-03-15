@@ -66,9 +66,9 @@ class BaseConfigurationField(ABC):
 
 
 class ConfigurationField[T](BaseConfigurationField):
-    """The base class for a configuration field"""
+    """The base class for an inline configuration field"""
 
-    __slots__ = ("_name", "_default_value", "_has_default", "_nullable")
+    __slots__ = ("_name", "_default_value", "_has_default", "_nullable", "doc", "_inline_doc")
 
     _name: None | str
     """The actual name used inside the configuration
@@ -77,6 +77,11 @@ class ConfigurationField[T](BaseConfigurationField):
     _has_default: bool
     _nullable: bool
     """is this value nullable"""
+    doc: str | None
+    '''Doc comment'''
+    inline_doc: bool
+    '''if a doc comment is present- should we try to put the doc
+        comment on the same line as the value?'''
 
     _holds: T
     """describes what type this field holds"""
@@ -87,12 +92,16 @@ class ConfigurationField[T](BaseConfigurationField):
         /,
         name: str | None = None,
         nullable: bool = False,
+        doc: None | str = None,
+        inline_doc: bool = True
     ):
         self._name = name
         self._nullable = nullable
         self._field_variable = None
         self._default_value = default_value
         self._has_default = default_value is not NoDefaultValue
+        self.doc = doc
+        self._inline_doc = inline_doc
 
     @abstractmethod
     def _validate_value(self, value: Any, name: str | None = None, /):

@@ -94,22 +94,34 @@ class TomlWriter(configio.ConfigurationWriter):
             case spec.ConfigEnum(_, by_name):
                 if isinstance(value, spec.Section):
                     return "\n".join(cls.dump_section(value))
+                
+                field_doc = "  " if field._inline_doc else "\n"
+
+                if field.doc:
+                    field_doc += f"# {"\n# ".join(field.doc.split("\n"))}"
+
                 if field._enum.__doc__:
                     delimeter = "\n##  - "
                     doc_comment = f"# {"\n# ".join(field._enum.__doc__.split("\n"))}\n#"
                 else:
                     delimeter = "\n#  - "
                     doc_comment = ""
+                
                 doc_comment += f"# Available Options for {field_name}:{delimeter}"
                 if by_name:
                     doc_comment += delimeter.join(member for member in field._enum.__members__.keys())
-                    return f"{field_name} = {cls.format_value(value.name)}\n{doc_comment}"
+                    return f"{field_name} = {cls.format_value(value.name)}{field_doc}\n{doc_comment}"
                 doc_comment += delimeter.join(member.value for member in field._enum.__members__.values())
-                return f"{field_name} = {cls.format_value(value.value)}\n{doc_comment}"
+                return f"{field_name} = {cls.format_value(value.value)}{field_doc}\n{doc_comment}"
             case _:
                 if isinstance(value, spec.Section):
                     return "\n".join(cls.dump_section(value))
-                return f"{field_name} = {cls.format_value(value)}"
+                real_field = node._ALL_FIELDS[original_name]
+                doc_comment = "  " if real_field._inline_doc else "\n"
+
+                if real_field.doc:
+                    doc_comment += f"# {"\n# ".join(real_field.doc.split("\n"))}"
+                return f"{field_name} = {cls.format_value(value)}{doc_comment}"
 
     @classmethod
     def dumps(cls, node) -> str:

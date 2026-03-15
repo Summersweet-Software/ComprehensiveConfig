@@ -17,7 +17,7 @@ A simple configuration library that lets you create a pydantic-like model for yo
 - [ ] yaml writer
 - [x] section list (via a Table field)
 - [x] Field type unions (overwriting normal union syntax)
-- [ ] per attribute doc comments
+- [x] per attribute doc comments (inline and noninline)
 - [x] enum support (Via `spec.ConfigEnum` and python's `enum.Enum`)
 - [x] fully supported string escapes
 
