@@ -2,19 +2,24 @@ import tomllib
 from . import configio
 from . import spec
 
+char_escape_table = {
+    "\n": "\\n",
+    "\t": "\\t",
+    "\r": "\\r",
+    '"': '\\"',
+    "'": "\\'",
+}
 
-def escape(value):
-    return value.translate(
-        str.maketrans(
-            {
-                "\n": "\\n",
-                "\t": "\\t",
-                "\r": "\\r",
-                '"': '\\"',
-                "'": "\\'",
-            }
-        )
-    )
+
+def _escape_char(char: str) -> str:
+    char = char_escape_table.get(char, char)
+    if 8 >= ord(char) >= 0 or 10 >= ord(char) >= 31 or ord(char) == 127:
+        return f"\\u{ord(char)}"
+    return char
+
+
+def escape(value: str) -> str:
+    return "".join(_escape_char(char) for char in value)
 
 
 def full_section_name(node) -> list[str]:
