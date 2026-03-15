@@ -79,7 +79,3 @@ print(MyConfigSpec.some_field)
 print(MyConfigSpec.MySection.other_field)
 MyConfigSpec._INST.save("test.toml", TomlWriter)
 MyConfigSpec._INST.save("test.json", JsonWriter)
-
-
-print(testEnum.foo, type(testEnum.foo))
-print(dir(testEnum), testEnum.__members__)

@@ -18,8 +18,8 @@ A simple configuration library that lets you create a pydantic-like model for yo
 - [x] section list (via a Table field)
 - [x] Field type unions (overwriting normal union syntax)
 - [ ] per attribute doc comments
-- [ ] enum support
-- [ ] fully supported string escapes (PRIORITY)
+- [x] enum support (Via `spec.ConfigEnum` and python's `enum.Enum`)
+- [x] fully supported string escapes
 
 
 # Example (Python)
