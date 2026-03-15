@@ -1,0 +1,49 @@
+[project]
+name = "comprehensiveconfig"
+version = "1.0.0"
+description = "A library to create ergonomic, auto-validated configuration models with great support for static type annotations."
+readme = "readme.md"
+requires-python = ">=3.12"
+dependencies = []
+
+license = { text = "LGPL-3.0-only" }
+keywords = [
+    "config",
+    "configuration",
+    "validation",
+    "validator",
+    "ergonomic",
+    "models",
+    "model",
+    "pydantic-like",
+    "toml",
+    "toml-writer",
+    "json",
+    "json-writer",
+    "type-annotated",
+    "type-annotations"
+]
+classifiers = [
+    # How mature is this project? Common values are
+    #   3 - Alpha
+    #   4 - Beta
+    #   5 - Production/Stable
+    "Development Status :: 5 - Production/Stable",
+
+    # Indicate who your project is intended for
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Build Tools",
+
+    # Specify the Python versions you support here.
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+]
+
+[project.urls]
+Homepage = "https://summersweet.software"
+# Documentation = "https://readthedocs.org" # Not yet created
+Repository = "https://github.com/summersweet-software/comprehensiveconfig"
+Issues = "https://github.com/summersweet-software/comprehensiveconfig/issues"
