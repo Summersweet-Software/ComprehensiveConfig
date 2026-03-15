@@ -56,6 +56,10 @@ class BaseConfigurationField(ABC):
     _field_variable: None | str
     """The python variable that this field is attached to"""
 
+    _sorting_order: int
+    '''The sorting order for dumping the data.
+    This is important when sections are taken into account'''
+
     def __call__[T](self, value: T) -> T:
         self._validate_value(value)
         return value
@@ -85,6 +89,7 @@ class ConfigurationField[T](BaseConfigurationField):
 
     _holds: T
     """describes what type this field holds"""
+    _sorting_order = 0
 
     def __init__(
         self,
@@ -181,6 +186,7 @@ class Section(BaseConfigurationField, metaclass=ConfigurationFieldABCMeta):
     _instance_parent: AnyConfigField | None
     _cls_parent: AnyConfigField | None
 
+    _sorting_order = 1
 
     @classmethod
     def __init_subclass__(cls, name: str | None = None, **kwargs):
@@ -458,7 +464,7 @@ class TableSpec(ConfigurationField, metaclass=ConfigurationFieldABCMeta):
 class Table[K, V](ConfigurationField):
     """A generic Table"""
 
-    __slots__ = ("key_type", "value_type")
+    __slots__ = ("key_type", "value_type", "_sorting_order")
     __match_args__ = ("key_type", "value_type")
 
     _holds: dict[K, V]
@@ -474,6 +480,10 @@ class Table[K, V](ConfigurationField):
     ):
         self.key_type = fix_unions(key_type)
         self.value_type = fix_unions(value_type)
+        if isinstance(value_type, Section):
+            self._sorting_order = 1
+        else:
+            self._sorting_order = 0
 
         return super().__init__(default_value, *args, **kwargs)
 

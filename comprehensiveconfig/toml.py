@@ -1,5 +1,6 @@
 import enum
 import tomllib
+from typing import Any
 from . import configio
 from . import spec
 
@@ -44,6 +45,14 @@ class TomlWriter(configio.ConfigurationWriter):
             for line in node.__doc__.split("\n"):
                 base.append(f"# {line}")
 
+        sorted_values: dict[int, dict[str, Any]] = {}
+        for name, value in node._value.items():
+            field = node._ALL_FIELDS[name]
+            if field._sorting_order not in sorted_values.keys():
+                sorted_values[field._sorting_order] = {name: value}
+                continue
+            sorted_values[field._sorting_order][name] = value
+
         return [
             *base,
             *(
@@ -52,7 +61,7 @@ class TomlWriter(configio.ConfigurationWriter):
                     if isinstance(value, spec.Section)
                     else cls.dump_field(node, name, node._FIELD_VAR_MAP[name], value)
                 )
-                for name, value in node._value.items()
+                for sub_dict in sorted_values.values() for name, value in sub_dict.items()
             ),
         ]
 
