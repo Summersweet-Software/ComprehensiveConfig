@@ -20,6 +20,7 @@ class Example(TableSpec):
 
 
 class testEnum(Enum):
+    '''An example doc comment to explain what our enumeration structure does'''
     foo = "burger"
     bar = "chicken"
 

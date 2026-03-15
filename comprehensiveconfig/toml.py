@@ -41,7 +41,8 @@ class TomlWriter(configio.ConfigurationWriter):
             base = []
 
         if node.__doc__:
-            base.append(f"# {node.__doc__}")
+            for line in node.__doc__.split("\n"):
+                base.append(f"# {line}")
 
         return [
             *base,
@@ -93,9 +94,13 @@ class TomlWriter(configio.ConfigurationWriter):
             case spec.ConfigEnum(_, by_name):
                 if isinstance(value, spec.Section):
                     return "\n".join(cls.dump_section(value))
-
-                delimeter = "\n#  - "
-                doc_comment = f"# Available Options for {field_name}:{delimeter}"
+                if field._enum.__doc__:
+                    delimeter = "\n##  - "
+                    doc_comment = f"# {"\n# ".join(field._enum.__doc__.split("\n"))}\n#"
+                else:
+                    delimeter = "\n#  - "
+                    doc_comment = ""
+                doc_comment += f"# Available Options for {field_name}:{delimeter}"
                 if by_name:
                     doc_comment += delimeter.join(member for member in field._enum.__members__.keys())
                     return f"{field_name} = {cls.format_value(value.name)}\n{doc_comment}"
