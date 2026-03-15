@@ -48,7 +48,7 @@ class MyConfigSpec(ConfigSpec,
     example_list_field = List(
         ["12", "13", "14", 22], inner_type=Text(regex=r"[0-9]*") | Integer()
     )
-    test_enum = ConfigEnum(testEnum, testEnum.foo)
+    test_enum = ConfigEnum(testEnum, testEnum.foo, by_name=False)
     model_example = Example()
     list_of_models = List([{"x": 12}, {"x": 12}], inner_type=Example())
     list_of_sections: Table[str, Credentials | int] = Table(

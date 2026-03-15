@@ -90,10 +90,17 @@ class TomlWriter(configio.ConfigurationWriter):
                 return f"\n[{section_name}]\n{"\n".join(cls.dumps(val) if isinstance(val, spec.Section) else cls.dump_field(val, key, key, val) for key, val in value.items())}"
             case spec.Section():
                 return "\n".join(cls.dump_section(node))
-            case spec.ConfigEnum(_, True):
+            case spec.ConfigEnum(_, by_name):
                 if isinstance(value, spec.Section):
                     return "\n".join(cls.dump_section(value))
-                return f"{field_name} = {cls.format_value(value.name)}"
+
+                delimeter = "\n#  - "
+                doc_comment = f"# Available Options for {field_name}:{delimeter}"
+                if by_name:
+                    doc_comment += delimeter.join(member for member in field._enum.__members__.keys())
+                    return f"{field_name} = {cls.format_value(value.name)}\n{doc_comment}"
+                doc_comment += delimeter.join(member.value for member in field._enum.__members__.values())
+                return f"{field_name} = {cls.format_value(value.value)}\n{doc_comment}"
             case _:
                 if isinstance(value, spec.Section):
                     return "\n".join(cls.dump_section(value))

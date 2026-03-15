@@ -633,6 +633,8 @@ class ConfigEnum[T](ConfigurationField):
         return super().__init__(default_value, *args, **kwargs)
 
     def get_value(self, value: Any):
+        if isinstance(value, self._enum):
+            return value
         if self._by_name:
             if value not in self._enum.__members__.keys():
                 raise ValueError(f"Invalid Enum Variant: {value}")
@@ -653,8 +655,10 @@ class ConfigEnum[T](ConfigurationField):
         super().__set__(instance, self.get_value(value))
 
     def _validate_value(self, value: Any, name: str | None = None, /):
-        super()._validate_value(value)
-        self.get_value(value)
+        if isinstance(value, self._enum):
+            super()._validate_value(value, name)
+        super()._validate_value(self.get_value(value), name)
+        
 
 
 __all__ = [
