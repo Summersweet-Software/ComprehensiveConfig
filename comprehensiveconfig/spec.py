@@ -427,6 +427,7 @@ class TableSpec(ConfigurationField, metaclass=ConfigurationFieldABCMeta):
         }
 
         cls._FIELD_VAR_MAP = {value: key for key, value in cls._FIELD_NAME_MAP.items()}
+        cls._sorting_order = max(field._sorting_order for field in cls._ALL_FIELDS.values())
 
         # generate default value
         cls._cls_has_default = all(
@@ -480,10 +481,8 @@ class Table[K, V](ConfigurationField):
     ):
         self.key_type = fix_unions(key_type)
         self.value_type = fix_unions(value_type)
-        if isinstance(value_type, Section):
-            self._sorting_order = 1
-        else:
-            self._sorting_order = 0
+        self._sorting_order = max(self.key_type._sorting_order, self.value_type._sorting_order)
+
 
         return super().__init__(default_value, *args, **kwargs)
 
@@ -580,7 +579,7 @@ class Text(ConfigurationField):
 class ConfigUnion[L, R](ConfigurationField):
     """union field"""
 
-    __slots__ = ("_left_type", "_right_type")
+    __slots__ = ("_left_type", "_right_type", "_sorting_order")
 
     _holds: L | R
 
@@ -597,6 +596,7 @@ class ConfigUnion[L, R](ConfigurationField):
         super().__init__(NoDefaultValue, *args, **kwargs)
         self._left_type = fix_unions(left_type)
         self._right_type = fix_unions(right_type)
+        self._sorting_order = max(self._left_type._sorting_order, self._right_type._sorting_order)
 
     def __call__(self, *args, **kwargs):
         try:
