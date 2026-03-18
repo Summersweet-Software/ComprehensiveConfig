@@ -1,4 +1,5 @@
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/comprehensiveconfig)](https://pypi.org/project/comprehensiveconfig/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/comprehensiveconfig?style=for-the-badge
+)](https://pypi.org/project/comprehensiveconfig/)
 # Comprehensive Configuration
 A simple configuration library that lets you create a pydantic-like model for your configuration.
 
