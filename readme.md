@@ -3,6 +3,9 @@
 # Comprehensive Configuration
 A simple configuration library that lets you create a pydantic-like model for your configuration.
 
+# Installation
+``pip install comprehensiveconfig``
+
 # Features
 - [x] Supports static type checking
 - [x] toml writer
