@@ -1,6 +1,6 @@
 [project]
 name = "comprehensiveconfig"
-version = "1.0.0"
+version = "1.0.1"
 description = "A library to create ergonomic, auto-validated configuration models with great support for static type annotations."
 readme = "readme.md"
 requires-python = ">=3.12"
