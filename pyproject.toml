@@ -33,6 +33,8 @@ classifiers = [
     # Indicate who your project is intended for
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Build Tools",
+    "Topic :: File Formats :: JSON",
+    "Topic :: File Formats :: TOML",
 
     # Specify the Python versions you support here.
     "Programming Language :: Python :: 3",
@@ -40,6 +42,9 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    "Operatihng System :: OS Independent",
+    "Natural Language :: English",
+    "Typing :: Typed"
 ]
 
 [project.urls]
