@@ -34,7 +34,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Build Tools",
     "Topic :: File Formats :: JSON",
-    "Topic :: File Formats :: TOML",
 
     # Specify the Python versions you support here.
     "Programming Language :: Python :: 3",
