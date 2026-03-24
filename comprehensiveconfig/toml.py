@@ -61,7 +61,8 @@ class TomlWriter(configio.ConfigurationWriter):
                     if isinstance(value, spec.Section)
                     else cls.dump_field(node, name, node._FIELD_VAR_MAP[name], value)
                 )
-                for sub_dict in sorted_values.values() for name, value in sub_dict.items()
+                for sub_dict in sorted_values.values()
+                for name, value in sub_dict.items()
             ),
         ]
 
@@ -82,7 +83,9 @@ class TomlWriter(configio.ConfigurationWriter):
                 raise ValueError(value)
 
     @classmethod
-    def dump_field(cls, node: spec.AnyConfigField, original_name: str, field_name: str, value) -> str:
+    def dump_field(
+        cls, node: spec.AnyConfigField, original_name: str, field_name: str, value
+    ) -> str:
         if isinstance(node, spec.Section):
             field = node.get_field(original_name)
         else:
@@ -94,8 +97,8 @@ class TomlWriter(configio.ConfigurationWriter):
                         continue
                     val._name = name
                     val._parent = table_node
-                
-                section_name = '.'.join(full_section_name(table_node)[1:])
+
+                section_name = ".".join(full_section_name(table_node)[1:])
 
                 return f"\n[{section_name}]\n{"\n".join(cls.dumps(val) if isinstance(val, spec.Section) else cls.dump_field(val, key, key, val) for key, val in value.items())}"
             case spec.Section():
@@ -103,7 +106,7 @@ class TomlWriter(configio.ConfigurationWriter):
             case spec.ConfigEnum(_, by_name):
                 if isinstance(value, spec.Section):
                     return "\n".join(cls.dump_section(value))
-                
+
                 field_doc = "  " if field._inline_doc else "\n"
 
                 if field.doc:
@@ -115,12 +118,16 @@ class TomlWriter(configio.ConfigurationWriter):
                 else:
                     delimeter = "\n#  - "
                     doc_comment = ""
-                
+
                 doc_comment += f"# Available Options for {field_name}:{delimeter}"
                 if by_name:
-                    doc_comment += delimeter.join(member for member in field._enum.__members__.keys())
+                    doc_comment += delimeter.join(
+                        member for member in field._enum.__members__.keys()
+                    )
                     return f"{field_name} = {cls.format_value(value.name)}{field_doc}\n{doc_comment}"
-                doc_comment += delimeter.join(member.value for member in field._enum.__members__.values())
+                doc_comment += delimeter.join(
+                    str(member.value) for member in field._enum.__members__.values()
+                )
                 return f"{field_name} = {cls.format_value(value.value)}{field_doc}\n{doc_comment}"
             case _:
                 if isinstance(value, spec.Section):
@@ -137,7 +144,7 @@ class TomlWriter(configio.ConfigurationWriter):
         match node:
             case spec.Section():
                 return "\n".join(cls.dump_section(node))
-            
+
             case _:
                 raise ValueError(node)
 
