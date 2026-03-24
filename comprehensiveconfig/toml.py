@@ -133,7 +133,9 @@ class TomlWriter(configio.ConfigurationWriter):
                 if isinstance(value, spec.Section):
                     return "\n".join(cls.dump_section(value))
                 real_field = node._ALL_FIELDS[original_name]
-                doc_comment = "  " if real_field._inline_doc else "\n"
+                doc_comment = (
+                    "  " if real_field._inline_doc and real_field.doc else "\n"
+                )
 
                 if real_field.doc:
                     doc_comment += f"# {"\n# ".join(real_field.doc.split("\n"))}"
