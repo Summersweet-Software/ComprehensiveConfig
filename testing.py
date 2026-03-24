@@ -10,7 +10,7 @@ from comprehensiveconfig.spec import (
     Float,
     Text,
     List,
-    ConfigEnum
+    ConfigEnum,
 )
 from comprehensiveconfig.toml import TomlWriter
 
@@ -20,15 +20,15 @@ class Example(TableSpec):
 
 
 class testEnum(Enum):
-    '''An example doc comment to explain what our enumeration structure does'''
+    """An example doc comment to explain what our enumeration structure does"""
+
     foo = "burger"
     bar = "chicken"
 
 
-class MyConfigSpec(ConfigSpec,
-                   default_file="test.toml",
-                   writer=TomlWriter,
-                   create_file=True):
+class MyConfigSpec(
+    ConfigSpec, default_file="test.toml", writer=TomlWriter, create_file=True
+):
     class MySection(Section, name="Funny_Section"):
         """Example comment under section"""
 
@@ -42,7 +42,7 @@ class MyConfigSpec(ConfigSpec,
         email = Text(
             "example@email.com",
             regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
-            doc="email of the account"
+            doc="email of the account",
         )
         password = Text("MyPassword")
 
@@ -57,7 +57,9 @@ class MyConfigSpec(ConfigSpec,
         key_type=Text(),
         value_type=Credentials | Integer(),
     )
-    test_enum = ConfigEnum(testEnum, testEnum.foo, by_name=False, doc="testing additional doc")
+    test_enum = ConfigEnum(
+        testEnum, testEnum.foo, by_name=False, doc="testing additional doc"
+    )
 
 
 print(MyConfigSpec.some_field)
