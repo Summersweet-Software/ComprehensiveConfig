@@ -9,5 +9,5 @@
    :maxdepth: 2
    :caption: Fields:
 
-   fields/index.rst
-   fields/basic_fields.rst
+    fields.rst
+    fields/*

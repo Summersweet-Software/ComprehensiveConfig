@@ -20,8 +20,8 @@ loading as well as complex validators for incoming configuration values.
    :maxdepth: 2
    :caption: Fields:
 
-   fields/index.rst
-   fields/basic_fields.rst
+   fields.rst
+   fields/*
 
 Indices and tables
 ==================
