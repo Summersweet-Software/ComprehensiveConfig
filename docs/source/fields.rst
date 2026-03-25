@@ -112,6 +112,7 @@ Module
     .. py:attribute:: _holds
         :type: float | int
 
+
 .. py:class:: comprehensiveconfig.spec.List[T](default_value: list[T] = [], /, inner_type: AnyConfigField | None = None, **kwargs)
 
     :param list[T] default_value: The default value of the field. This always default to an empty list (required for static type checking)
@@ -153,6 +154,54 @@ Module
     .. py:method:: __init__(self, default_value: dict | NoDefaultValue = NoDefaultValue, /, *args, **kwargs)
 
         :param dict | NoDefaultValue default_value: Default Value for a field of this type.
+
+.. py:class:: comprehensiveconfig.spec.Section(cls, name: str | None = None, **kwargs)
+
+    .. important::
+        This is meant to only be used as a baseclass. The arguments provided above are for subclassing
+        usage:
+
+
+        .. code-block:: python
+
+            class SomeSection(Section, name="Something"):
+                pass
+
+    .. py:attribute::_FIELDS
+        :type: dict[str, AnyConfigField]
+
+    .. py:attribute::_SECTIONS
+        :type: dict[str, Type]
+
+    .. py:attribute::_ALL_FIELDS
+        :type: dict[str, AnyConfigField | Type]
+
+    .. py:attribute::_FIELD_NAME_MAP
+        :type: dict[str, str]
+
+    .. py:attribute::_FIELD_VAR_MAP
+        :type: dict[str, str]
+
+    .. py:attribute::_cls_name
+        :type: str
+
+    .. py:attribute::_instance_name
+        :type: str
+
+    .. py:attribute::_has_default
+        :type: bool
+
+    .. py:attribute::_default_value
+        :type: dict[str, Any] | _NoDefaultValueT
+
+    .. py:attribute::_parent
+        :type: SectionParent
+
+    .. py:attribute::_instance_parent
+        :type: AnyConfigField | None
+
+    .. py:attribute::_cls_parent
+        :type: AnyConfigField | None
 
 
 .. py:class:: comprehensiveconfig.spec.ConfigUnion[L, R](left_type: AnyConfigField | Type, right_type: AnyConfigField | Type, *args, **kwargs,)
