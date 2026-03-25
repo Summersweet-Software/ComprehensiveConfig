@@ -51,3 +51,10 @@ Homepage = "https://summersweet.software"
 # Documentation = "https://readthedocs.org" # Not yet created
 Repository = "https://github.com/summersweet-software/comprehensiveconfig"
 Issues = "https://github.com/summersweet-software/comprehensiveconfig/issues"
+
+[dependency-groups]
+dev = [
+    "sphinx>=9.1.0",
+    "sphinx-autobuild>=2025.8.25",
+    "sphinx-rtd-theme>=3.1.0",
+]
