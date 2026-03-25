@@ -14,7 +14,7 @@ For example- in toml:
     x = "foo"
 
 Module
-*****
+*******
 
 .. py:data:: NoDefaultValue
     :type: _NoDefaultValueT
@@ -45,10 +45,20 @@ Module
 .. py:class:: ConfigurationField[T](default_value: T | _NoDefaultValueT = NoDefaultValue, /, name: str | None = None, nullable: bool = False, doc: None | str = None, inline_doc: bool = True)
     :abstract:
 
+    :param T | _NoDefaultValueT default_value: The default value used for this configuration file
+    :param str name: The name of the field in our configuration file
+    :param bool nullable: Defines if the value of the field can be :py:const:`None`
+    :param str | None doc: The documentation/comment for this field (only exported in config formats that support comments)
+    :param bool inline_doc: Defines if the doc comment is on the same line as the field
+    
+
     Abstract base class for all configuration fields
 
     .. py:method:: def _validate_value(self, value: Any, name: str | None = None, /):
         :abstractmethod:
+
+        :param value: The value we are validating
+        :param name: The transformed name of the field (used in error messages)
 
         The in-built validator for a given field.
 
@@ -85,7 +95,45 @@ Module
 
         Whether a doc comment should be rendered on the same line as the field (on formats that support comments)
 
-.. py:class:: comprehensiveconfig.spec.Integer(default_value=NoDefaultValue, **kwargs)
+.. py:class:: comprehensiveconfig.spec.Integer(*args, **kwargs)
 
     .. py:attribute:: _holds
         :type: int
+
+.. py:class:: comprehensiveconfig.spec.Float(*args, **kwargs)
+
+    .. py:attribute:: _holds
+        :type: float | int
+
+.. py:class:: comprehensiveconfig.spec.Text(*args, regex: str = r".*", **kwargs)
+
+    :param str regex: Defines a regex pattern to validate against. Useful for email fields, ips, and other structured data.
+
+    .. py:attribute:: _holds
+        :type: float | int
+
+.. py:class:: comprehensiveconfig.spec.List[T](default_value: list[T] = [], /, inner_type: AnyConfigField | None = None, **kwargs)
+
+    :param list[T] default_value: The default value of the field. This always default to an empty list (required for static type checking)
+    :param AnyConfigField | None inner_type: The inner type used in the list. This is any field in the spec. This allows you to further validate the inner data.
+
+    .. py:attribute:: _holds
+        :type: list[T]
+
+    .. note::
+
+        Might require manual annotation if your default value remains an empty list
+
+.. py:class:: comprehensiveconfig.spec.Table[K, V](default_value: dict[K, V] = {}, /, key_type: AnyConfigField | None = None, value_type: AnyConfigField | None = None, **kwargs)
+
+    :param list[T] default_value: The default value of the field. This always default to an empty dict (required for static type checking)
+    :param AnyConfigField | None key_type: The type of the keys used in the dict. This is any field in the spec. This allows you to further validate the inner data.
+    :param AnyConfigField | None value_type: The type of the values used in the dict. This is any field in the spec. This allows you to further validate the inner data.
+
+    .. py:attribute:: _holds
+        :type: list[T]
+
+    .. note::
+
+        Might require manual annotation if your default value remains an empty dict
+
