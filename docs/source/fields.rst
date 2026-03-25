@@ -50,7 +50,7 @@ Module
     :param bool nullable: Defines if the value of the field can be :py:const:`None`
     :param str | None doc: The documentation/comment for this field (only exported in config formats that support comments)
     :param bool inline_doc: Defines if the doc comment is on the same line as the field
-    
+
 
     Abstract base class for all configuration fields
 
@@ -137,3 +137,54 @@ Module
 
         Might require manual annotation if your default value remains an empty dict
 
+.. py:class:: comprehensiveconfig.spec.TableSpec(cls, name: str | None = None, **kwargs)
+
+    .. important::
+        This is meant to only be used as a baseclass. The arguments provided above are for subclassing
+        usage:
+
+
+        .. code-block:: python
+
+            class MySpec(TableSpec, name="Something"):
+                '''Instantiate to create a field'''
+                pass
+
+    .. py:method:: __init__(self, default_value: dict | NoDefaultValue = NoDefaultValue, /, *args, **kwargs)
+
+        :param dict | NoDefaultValue default_value: Default Value for a field of this type.
+
+
+.. py:class:: comprehensiveconfig.spec.ConfigUnion[L, R](left_type: AnyConfigField | Type, right_type: AnyConfigField | Type, *args, **kwargs,)
+
+    .. important::
+        This should not be instantiated directly! Instead do the following:
+
+
+        .. code-block:: python
+
+            Integer() | Text(regex="...")
+
+        Also important to note that validation is done Left-to-Right. That means it will always try to match against the left-most types first
+
+    .. py:attribute:: _holds
+        :type: L | R
+
+.. py:class:: comprehensiveconfig.spec.ConfigEnum[T](enum_type: Type[T], default_value: T | _NoDefaultValueT = NoDefaultValue, /, *args, by_name=False, **kwargs)
+
+    :param Type[T] enum_type: The class of the enum we want to represent in this field.
+    :param T | NoDefaultValue default_value: Default value of our field
+    :param bool by_name: Choose whether or not we should have variants use their value's or their name's when we validate configuration.
+
+    This is a way to use an existing python enum (:py:class:`enum.Enum`) as a validated field.
+
+    .. py:attribute:: _holds
+        :type: T
+
+    .. py:attribute:: _enum_type
+        :type: Type[T]
+
+    .. py:attribute:: _enum_members_reversed
+        :type: dict[Any, T]
+
+        A reversed mapping of values and enum variants (instances) in the enumeration type
