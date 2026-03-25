@@ -2,6 +2,7 @@ env/
 **/__pycache__/
 dist/
 comprehensiveconfig.egg-info/
+docs/build/
 
 # Testing files
 test.json
