@@ -1,3 +1,6 @@
+import os
+import tomllib
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -9,7 +12,11 @@
 project = "Comprehensive Config"
 copyright = "2026, Summersweet Software"
 author = "Summersweet Software"
-release = "1.0.1"
+
+# Automatic versioning
+with open(f"{os.getcwd()}/../../pyproject.toml", "r") as f:
+    pyproj = tomllib.loads(f.read())
+    release = pyproj["project"]["version"]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
