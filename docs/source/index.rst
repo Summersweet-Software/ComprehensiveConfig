@@ -21,7 +21,16 @@ loading as well as complex validators for incoming configuration values.
    :caption: Fields:
 
    fields.rst
-   fields/*
+
+
+.. toctree::
+   :glob:
+   :maxdepth: 3
+   :caption: Writers:
+
+   writers.rst
+   json_writer.rst
+   toml_writer.rst
 
 Indices and tables
 ==================
