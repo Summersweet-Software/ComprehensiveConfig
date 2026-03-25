@@ -1,12 +1,15 @@
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/comprehensiveconfig?style=for-the-badge
-)](https://pypi.org/project/comprehensiveconfig/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/comprehensiveconfig?style=for-the-badge)](https://pypi.org/project/comprehensiveconfig/)
+
 # Comprehensive Configuration
+
 A simple configuration library that lets you create a pydantic-like model for your configuration.
 
 # Installation
-``pip install comprehensiveconfig``
+
+`pip install comprehensiveconfig`
 
 # Features
+
 - [x] Supports static type checking
 - [x] toml writer
 - [x] json writer
@@ -20,12 +23,12 @@ A simple configuration library that lets you create a pydantic-like model for yo
 - [x] auto loading
 - [x] initialize default config (with auto loader)
 - [ ] yaml writer
+- [ ] Tests targetting mypy and other static type checkers to ensure EVERYTHING looks good across IDE's
 - [x] section list (via a Table field)
 - [x] Field type unions (overwriting normal union syntax)
 - [x] per attribute doc comments (inline and noninline)
 - [x] enum support (Via `spec.ConfigEnum` and python's `enum.Enum`)
 - [x] fully supported string escapes
-
 
 # Example (Python)
 

@@ -22,6 +22,7 @@ NoDefaultValue = object.__new__(_NoDefaultValueT)
 
 class ConfigurationFieldMeta(type):
     """Provides custom union logic for configuration fields"""
+
     def __or__[S, T](self: S, value: Type[T] | T) -> S | Type[T]:
         """broaden normal Union behavior so things don't break"""
         if not isinstance(value, type) and not isinstance(
@@ -57,8 +58,8 @@ class BaseConfigurationField(ABC):
     """The python variable that this field is attached to"""
 
     _sorting_order: int
-    '''The sorting order for dumping the data.
-    This is important when sections are taken into account'''
+    """The sorting order for dumping the data.
+    This is important when sections are taken into account"""
 
     def __call__[T](self, value: T) -> T:
         self._validate_value(value)
@@ -72,7 +73,14 @@ class BaseConfigurationField(ABC):
 class ConfigurationField[T](BaseConfigurationField):
     """The base class for an inline configuration field"""
 
-    __slots__ = ("_name", "_default_value", "_has_default", "_nullable", "doc", "_inline_doc")
+    __slots__ = (
+        "_name",
+        "_default_value",
+        "_has_default",
+        "_nullable",
+        "doc",
+        "_inline_doc",
+    )
 
     _name: None | str
     """The actual name used inside the configuration
@@ -82,10 +90,10 @@ class ConfigurationField[T](BaseConfigurationField):
     _nullable: bool
     """is this value nullable"""
     doc: str | None
-    '''Doc comment'''
+    """Doc comment"""
     inline_doc: bool
-    '''if a doc comment is present- should we try to put the doc
-        comment on the same line as the value?'''
+    """if a doc comment is present- should we try to put the doc
+        comment on the same line as the value?"""
 
     _holds: T
     """describes what type this field holds"""
@@ -98,7 +106,7 @@ class ConfigurationField[T](BaseConfigurationField):
         name: str | None = None,
         nullable: bool = False,
         doc: None | str = None,
-        inline_doc: bool = True
+        inline_doc: bool = True,
     ):
         self._name = name
         self._nullable = nullable
@@ -311,73 +319,6 @@ class Section(BaseConfigurationField, metaclass=ConfigurationFieldABCMeta):
         return False
 
 
-class Float(ConfigurationField):
-    """Floating point field"""
-
-    __slots__ = ()
-
-    _holds: float
-
-    def __get__(self, instance, owner) -> float:
-        return super().__get__(instance, owner)
-
-    def __set__(self, instance, value: float):
-        super().__set__(instance, value)
-
-    def _validate_value(self, value: Any, name: str | None = None, /):
-        super()._validate_value(value)
-        if not isinstance(value, (float, int)):
-            raise ValueError(
-                f"Field: {name or self._name}\nValue was not a valid number: {repr(value)}"
-            )
-
-
-class List[T](ConfigurationField):
-    """List field"""
-
-    __slots__ = "inner_type"
-
-    _holds: list[T]
-
-    def __init__(
-        self,
-        default_value: list[T] = [],
-        /,
-        inner_type: AnyConfigField | None = None,
-        *args,
-        **kwargs,
-    ):
-        self.inner_type = fix_unions(inner_type)
-
-        return super().__init__(default_value, *args, **kwargs)
-    
-    def __call__(self, value: list[T]) -> list[T]:
-        return [self.inner_type(val) for val in value]
-    
-    def __get__(self, instance, owner) -> list[T]:
-        return super().__get__(instance, owner)
-
-    def __set__(self, instance, value: list[T]):
-        super().__set__(instance, value)
-
-    def _validate_value(self, value: Any, name: str | None = None, /):
-        super()._validate_value(value)
-        if not isinstance(value, list):
-            raise ValueError(
-                f"Field: {name or self._name}\nValue was not a valid list: {value}"
-            )
-
-        match self.inner_type:
-            case None:
-                return
-            case type():
-                raise ValueError(self.inner_type)
-
-            case BaseConfigurationField():
-                for c, item in enumerate(value):
-                    self.inner_type._validate_value(item, f"{name or self._name}[{c}]")
-
-
 class TableSpec(ConfigurationField, metaclass=ConfigurationFieldABCMeta):
     """A model/Table"""
 
@@ -427,7 +368,9 @@ class TableSpec(ConfigurationField, metaclass=ConfigurationFieldABCMeta):
         }
 
         cls._FIELD_VAR_MAP = {value: key for key, value in cls._FIELD_NAME_MAP.items()}
-        cls._sorting_order = max(field._sorting_order for field in cls._ALL_FIELDS.values())
+        cls._sorting_order = max(
+            field._sorting_order for field in cls._ALL_FIELDS.values()
+        )
 
         # generate default value
         cls._cls_has_default = all(
@@ -479,16 +422,25 @@ class Table[K, V](ConfigurationField):
         *args,
         **kwargs,
     ):
+        if not isinstance(key_type, BaseConfigurationField):
+            assert TypeError("key_type must be an instance of `BaseConfigurationField`")
+        if not isinstance(value_type, BaseConfigurationField):
+            assert TypeError(
+                "value_type must be an instance of `BaseConfigurationField`"
+            )
         self.key_type = fix_unions(key_type)
         self.value_type = fix_unions(value_type)
-        self._sorting_order = max(self.key_type._sorting_order, self.value_type._sorting_order)
 
+        self._sorting_order = max(
+            self.key_type._sorting_order, self.value_type._sorting_order
+        )
 
         return super().__init__(default_value, *args, **kwargs)
 
     def __call__(self, value: dict[K, V]) -> dict[K, V]:
+        self._validate_value(value, self._name)
         return {self.key_type(key): self.value_type(val) for key, val in value.items()}
-    
+
     def __get__(self, instance, owner) -> dict[K, V]:
         return super().__get__(instance, owner)
 
@@ -513,6 +465,74 @@ class Table[K, V](ConfigurationField):
                 self.value_type._validate_value(
                     val, f"{name or self._name}[{key}] (value)"
                 )
+
+
+class List[T](ConfigurationField):
+    """List field"""
+
+    __slots__ = "inner_type"
+
+    _holds: list[T]
+
+    def __init__(
+        self,
+        default_value: list[T] = [],
+        /,
+        inner_type: AnyConfigField | None = None,
+        *args,
+        **kwargs,
+    ):
+        self.inner_type = fix_unions(inner_type)
+
+        return super().__init__(default_value, *args, **kwargs)
+
+    def __call__(self, value: list[T]) -> list[T]:
+        self._validate_value(value, self._name)
+        return [self.inner_type(val) for val in value]
+
+    def __get__(self, instance, owner) -> list[T]:
+        return super().__get__(instance, owner)
+
+    def __set__(self, instance, value: list[T]):
+        super().__set__(instance, value)
+
+    def _validate_value(self, value: Any, name: str | None = None, /):
+        super()._validate_value(value, name)
+        if not isinstance(value, list):
+            raise ValueError(
+                f"Field: {name or self._name}\nValue was not a valid list: {value}"
+            )
+
+        match self.inner_type:
+            case None:
+                return
+            case type():
+                raise ValueError(self.inner_type)
+
+            case BaseConfigurationField():
+                for c, item in enumerate(value):
+                    self.inner_type._validate_value(item, f"{name or self._name}[{c}]")
+
+
+class Float(ConfigurationField):
+    """Floating point field"""
+
+    __slots__ = ()
+
+    _holds: float
+
+    def __get__(self, instance, owner) -> float:
+        return super().__get__(instance, owner)
+
+    def __set__(self, instance, value: float):
+        super().__set__(instance, value)
+
+    def _validate_value(self, value: Any, name: str | None = None, /):
+        super()._validate_value(value)
+        if not isinstance(value, (float, int)):
+            raise ValueError(
+                f"Field: {name or self._name}\nValue was not a valid number: {repr(value)}"
+            )
 
 
 class Integer(ConfigurationField):
@@ -596,14 +616,16 @@ class ConfigUnion[L, R](ConfigurationField):
         super().__init__(NoDefaultValue, *args, **kwargs)
         self._left_type = fix_unions(left_type)
         self._right_type = fix_unions(right_type)
-        self._sorting_order = max(self._left_type._sorting_order, self._right_type._sorting_order)
+        self._sorting_order = max(
+            self._left_type._sorting_order, self._right_type._sorting_order
+        )
 
     def __call__(self, *args, **kwargs):
         try:
             return self._left_type(*args, **kwargs)
         except ValueError:  # if left side fails, try the right
             return self._right_type(*args, **kwargs)
-    
+
     def __get__(self, instance, owner) -> L | R:
         return super().__get__(instance, owner)
 
@@ -627,12 +649,12 @@ class ConfigEnum[T](ConfigurationField):
     _holds: T
 
     _enum: Type[T]
-    '''The enumeration type'''
+    """The enumeration type"""
     _enum_members_reversed: dict[Any, T]
-    '''A reversed mapping of values  and enum variants in the enumeration type'''
+    """A reversed mapping of values  and enum variants in the enumeration type"""
     _by_name: bool
-    '''whether or not the field value is using the
-       enum variants' name or value'''
+    """whether or not the field value is using the
+       enum variants' name or value"""
 
     def __init__(
         self,
@@ -646,7 +668,9 @@ class ConfigEnum[T](ConfigurationField):
         self._enum = enum_type
         if not isinstance(enum_type, enum.EnumMeta):
             raise ValueError("Type must be an enumerator")
-        self._enum_members_reversed = {v.value: v for v in enum_type.__members__.values()}
+        self._enum_members_reversed = {
+            v.value: v for v in enum_type.__members__.values()
+        }
         self._by_name = by_name
 
         return super().__init__(default_value, *args, **kwargs)
@@ -661,7 +685,7 @@ class ConfigEnum[T](ConfigurationField):
         if value not in self._enum_members_reversed.keys():
             raise ValueError(f"Invalid Enum Variant: {value}")
         return self._enum_members_reversed[value]
-    
+
     def __call__(self, value: Any):
         return self.get_value(value)
 
@@ -677,7 +701,6 @@ class ConfigEnum[T](ConfigurationField):
         if isinstance(value, self._enum):
             super()._validate_value(value, name)
         super()._validate_value(self.get_value(value), name)
-        
 
 
 __all__ = [
@@ -692,5 +715,5 @@ __all__ = [
     "Table",
     "TableSpec",
     "List",
-    "ConfigEnum"
+    "ConfigEnum",
 ]
