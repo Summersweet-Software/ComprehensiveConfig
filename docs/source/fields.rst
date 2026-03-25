@@ -167,40 +167,40 @@ Module
             class SomeSection(Section, name="Something"):
                 pass
 
-    .. py:attribute::_FIELDS
+    .. py:attribute:: _FIELDS
         :type: dict[str, AnyConfigField]
 
-    .. py:attribute::_SECTIONS
+    .. py:attribute:: _SECTIONS
         :type: dict[str, Type]
 
-    .. py:attribute::_ALL_FIELDS
+    .. py:attribute:: _ALL_FIELDS
         :type: dict[str, AnyConfigField | Type]
 
-    .. py:attribute::_FIELD_NAME_MAP
+    .. py:attribute:: _FIELD_NAME_MAP
         :type: dict[str, str]
 
-    .. py:attribute::_FIELD_VAR_MAP
+    .. py:attribute:: _FIELD_VAR_MAP
         :type: dict[str, str]
 
-    .. py:attribute::_cls_name
+    .. py:attribute:: _cls_name
         :type: str
 
-    .. py:attribute::_instance_name
+    .. py:attribute:: _instance_name
         :type: str
 
-    .. py:attribute::_has_default
+    .. py:attribute:: _has_default
         :type: bool
 
-    .. py:attribute::_default_value
+    .. py:attribute:: _default_value
         :type: dict[str, Any] | _NoDefaultValueT
 
-    .. py:attribute::_parent
+    .. py:attribute:: _parent
         :type: SectionParent
 
-    .. py:attribute::_instance_parent
+    .. py:attribute:: _instance_parent
         :type: AnyConfigField | None
 
-    .. py:attribute::_cls_parent
+    .. py:attribute:: _cls_parent
         :type: AnyConfigField | None
 
 
