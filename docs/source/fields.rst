@@ -73,6 +73,18 @@ Module
     .. py:attribute:: _nullable
         :type: bool
 
+    .. py:attribute:: doc
+        :type: str | None
+        :value: None
+
+        A doc comment added for configuration formats that support it
+
+    .. py:attribute:: inline_doc
+        :type: bool
+        :value: True
+
+        Whether a doc comment should be rendered on the same line as the field (on formats that support comments)
+
 .. py:class:: comprehensiveconfig.spec.Integer(default_value=NoDefaultValue, **kwargs)
 
     .. py:attribute:: _holds
