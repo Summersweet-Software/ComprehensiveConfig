@@ -319,74 +319,6 @@ class Section(BaseConfigurationField, metaclass=ConfigurationFieldABCMeta):
         return False
 
 
-class Float(ConfigurationField):
-    """Floating point field"""
-
-    __slots__ = ()
-
-    _holds: float
-
-    def __get__(self, instance, owner) -> float:
-        return super().__get__(instance, owner)
-
-    def __set__(self, instance, value: float):
-        super().__set__(instance, value)
-
-    def _validate_value(self, value: Any, name: str | None = None, /):
-        super()._validate_value(value)
-        if not isinstance(value, (float, int)):
-            raise ValueError(
-                f"Field: {name or self._name}\nValue was not a valid number: {repr(value)}"
-            )
-
-
-class List[T](ConfigurationField):
-    """List field"""
-
-    __slots__ = "inner_type"
-
-    _holds: list[T]
-
-    def __init__(
-        self,
-        default_value: list[T] = [],
-        /,
-        inner_type: AnyConfigField | None = None,
-        *args,
-        **kwargs,
-    ):
-        self.inner_type = fix_unions(inner_type)
-
-        return super().__init__(default_value, *args, **kwargs)
-
-    def __call__(self, value: list[T]) -> list[T]:
-        self._validate_value(value, self._name)
-        return [self.inner_type(val) for val in value]
-
-    def __get__(self, instance, owner) -> list[T]:
-        return super().__get__(instance, owner)
-
-    def __set__(self, instance, value: list[T]):
-        super().__set__(instance, value)
-
-    def _validate_value(self, value: Any, name: str | None = None, /):
-        super()._validate_value(value, name)
-        if not isinstance(value, list):
-            raise ValueError(
-                f"Field: {name or self._name}\nValue was not a valid list: {value}"
-            )
-
-        match self.inner_type:
-            case None:
-                return
-            case type():
-                raise ValueError(self.inner_type)
-
-            case BaseConfigurationField():
-                for c, item in enumerate(value):
-                    self.inner_type._validate_value(item, f"{name or self._name}[{c}]")
-
-
 class TableSpec(ConfigurationField, metaclass=ConfigurationFieldABCMeta):
     """A model/Table"""
 
@@ -533,6 +465,74 @@ class Table[K, V](ConfigurationField):
                 self.value_type._validate_value(
                     val, f"{name or self._name}[{key}] (value)"
                 )
+
+
+class List[T](ConfigurationField):
+    """List field"""
+
+    __slots__ = "inner_type"
+
+    _holds: list[T]
+
+    def __init__(
+        self,
+        default_value: list[T] = [],
+        /,
+        inner_type: AnyConfigField | None = None,
+        *args,
+        **kwargs,
+    ):
+        self.inner_type = fix_unions(inner_type)
+
+        return super().__init__(default_value, *args, **kwargs)
+
+    def __call__(self, value: list[T]) -> list[T]:
+        self._validate_value(value, self._name)
+        return [self.inner_type(val) for val in value]
+
+    def __get__(self, instance, owner) -> list[T]:
+        return super().__get__(instance, owner)
+
+    def __set__(self, instance, value: list[T]):
+        super().__set__(instance, value)
+
+    def _validate_value(self, value: Any, name: str | None = None, /):
+        super()._validate_value(value, name)
+        if not isinstance(value, list):
+            raise ValueError(
+                f"Field: {name or self._name}\nValue was not a valid list: {value}"
+            )
+
+        match self.inner_type:
+            case None:
+                return
+            case type():
+                raise ValueError(self.inner_type)
+
+            case BaseConfigurationField():
+                for c, item in enumerate(value):
+                    self.inner_type._validate_value(item, f"{name or self._name}[{c}]")
+
+
+class Float(ConfigurationField):
+    """Floating point field"""
+
+    __slots__ = ()
+
+    _holds: float
+
+    def __get__(self, instance, owner) -> float:
+        return super().__get__(instance, owner)
+
+    def __set__(self, instance, value: float):
+        super().__set__(instance, value)
+
+    def _validate_value(self, value: Any, name: str | None = None, /):
+        super()._validate_value(value)
+        if not isinstance(value, (float, int)):
+            raise ValueError(
+                f"Field: {name or self._name}\nValue was not a valid number: {repr(value)}"
+            )
 
 
 class Integer(ConfigurationField):
