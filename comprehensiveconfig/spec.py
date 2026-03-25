@@ -490,8 +490,15 @@ class Table[K, V](ConfigurationField):
         *args,
         **kwargs,
     ):
+        if not isinstance(key_type, BaseConfigurationField):
+            assert TypeError("key_type must be an instance of `BaseConfigurationField`")
+        if not isinstance(value_type, BaseConfigurationField):
+            assert TypeError(
+                "value_type must be an instance of `BaseConfigurationField`"
+            )
         self.key_type = fix_unions(key_type)
         self.value_type = fix_unions(value_type)
+
         self._sorting_order = max(
             self.key_type._sorting_order, self.value_type._sorting_order
         )
@@ -499,6 +506,7 @@ class Table[K, V](ConfigurationField):
         return super().__init__(default_value, *args, **kwargs)
 
     def __call__(self, value: dict[K, V]) -> dict[K, V]:
+        self._validate_value(value, self._name)
         return {self.key_type(key): self.value_type(val) for key, val in value.items()}
 
     def __get__(self, instance, owner) -> dict[K, V]:
