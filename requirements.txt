@@ -1,0 +1,5 @@
+# NOT THE REQUIREMENTS TO USE THIS PROJECT
+# In place for github dependencies
+# dev
+mypy
+pytest
