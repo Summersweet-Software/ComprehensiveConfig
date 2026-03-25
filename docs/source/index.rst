@@ -76,11 +76,11 @@ Module
 
       Load a specified file (or load default file with default writer)
 
-   .. py:method:: save(self, file=None, writer=None, /)
+   .. py:method:: save(file=None, writer=None, /)
 
       Save a specified file (or save default file with default writer)
 
-   .. py:method:: reset(self)
+   .. py:method:: reset()
 
       Reset configuration using default values of all fields
 
