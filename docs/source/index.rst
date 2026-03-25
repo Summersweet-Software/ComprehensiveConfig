@@ -17,7 +17,7 @@ loading as well as complex validators for incoming configuration values.
 
 .. toctree::
    :glob:
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Fields:
 
    fields.rst
