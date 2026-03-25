@@ -1,17 +1,31 @@
-.. Comprehensive Config documentation master file, created by
-   sphinx-quickstart on Tue Mar 24 20:35:07 2026.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Comprehensive Config
+=====================
 
-Comprehensive Config documentation
-==================================
+Comprehensive config is a python-based configuration library that aim to be extraordinarily pythonic and easy to use.
+It takes heavy inspiration from pydantic models.
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+Comprehensive config includes automatic config file creation and/or
+loading as well as complex validators for incoming configuration values.
 
 
 .. toctree::
+   :glob:
    :maxdepth: 2
    :caption: Contents:
 
+   self
+
+.. toctree::
+   :glob:
+   :maxdepth: 2
+   :caption: Fields:
+
+   fields/index.rst
+   fields/basic_fields.rst
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
