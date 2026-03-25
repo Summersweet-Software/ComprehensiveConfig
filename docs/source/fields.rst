@@ -27,7 +27,7 @@ Module
 
 .. py:class:: ConfigurationFieldMeta
 
-    .. py:method:: __or__[S, T](self: S, value: Type[T] | T) -> S | Type[T]:
+    .. py:method:: __or__[S, T](value: Type[T] | T) -> S | Type[T]
 
         Overwrite default type union behavior
 
@@ -36,7 +36,7 @@ Module
 
     Abstract base class for all configuration fields
 
-    .. py:method:: def _validate_value(self, value: Any, name: str | None = None, /):
+    .. py:method:: _validate_value(value: Any, name: str | None = None, /)
         :abstractmethod:
 
         The in-built validator for a given field.
@@ -54,7 +54,7 @@ Module
 
     Abstract base class for all configuration fields
 
-    .. py:method:: def _validate_value(self, value: Any, name: str | None = None, /):
+    .. py:method:: _validate_value(value: Any, name: str | None = None, /)
         :abstractmethod:
 
         :param value: The value we are validating
@@ -110,7 +110,7 @@ Module
     :param str regex: Defines a regex pattern to validate against. Useful for email fields, ips, and other structured data.
 
     .. py:attribute:: _holds
-        :type: float | int
+        :type: str
 
 
 .. py:class:: comprehensiveconfig.spec.List[T](default_value: list[T] = [], /, inner_type: AnyConfigField | None = None, **kwargs)
@@ -127,12 +127,12 @@ Module
 
 .. py:class:: comprehensiveconfig.spec.Table[K, V](default_value: dict[K, V] = {}, /, key_type: AnyConfigField | None = None, value_type: AnyConfigField | None = None, **kwargs)
 
-    :param list[T] default_value: The default value of the field. This always default to an empty dict (required for static type checking)
+    :param dict[K, V] default_value: The default value of the field. This always default to an empty dict (required for static type checking)
     :param AnyConfigField | None key_type: The type of the keys used in the dict. This is any field in the spec. This allows you to further validate the inner data.
     :param AnyConfigField | None value_type: The type of the values used in the dict. This is any field in the spec. This allows you to further validate the inner data.
 
     .. py:attribute:: _holds
-        :type: list[T]
+        :type: dict[K, V]
 
     .. note::
 
@@ -151,7 +151,7 @@ Module
                 '''Instantiate to create a field'''
                 pass
 
-    .. py:method:: __init__(self, default_value: dict | NoDefaultValue = NoDefaultValue, /, *args, **kwargs)
+    .. py:method:: __init__(default_value: dict | NoDefaultValue = NoDefaultValue, /, *args, **kwargs)
 
         :param dict | NoDefaultValue default_value: Default Value for a field of this type.
 

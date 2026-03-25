@@ -4,7 +4,7 @@ Comprehensive Config
 .. py:currentmodule:: comprehensiveconfig.json
 
 
-Comprehensive config is a python-based configuration library that aim to be extraordinarily pythonic and easy to use.
+Comprehensive config is a python configuration library that aims to be extraordinarily pythonic and easy to use.
 It takes heavy inspiration from pydantic models.
 
 Comprehensive config includes automatic config file creation and/or
