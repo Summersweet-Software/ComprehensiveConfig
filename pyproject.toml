@@ -21,7 +21,7 @@ keywords = [
     "json",
     "json-writer",
     "type-annotated",
-    "type-annotations"
+    "type-annotations",
 ]
 classifiers = [
     # How mature is this project? Common values are
@@ -43,7 +43,7 @@ classifiers = [
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Operating System :: OS Independent",
     "Natural Language :: English",
-    "Typing :: Typed"
+    "Typing :: Typed",
 ]
 
 [project.urls]
@@ -51,6 +51,7 @@ Homepage = "https://summersweet.software"
 # Documentation = "https://readthedocs.org" # Not yet created
 Repository = "https://github.com/summersweet-software/comprehensiveconfig"
 Issues = "https://github.com/summersweet-software/comprehensiveconfig/issues"
+Documentation = "https://comprehensiveconfig.readthedocs.io/en/"
 
 [dependency-groups]
 dev = [
