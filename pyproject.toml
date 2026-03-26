@@ -48,7 +48,6 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://summersweet.software"
-# Documentation = "https://readthedocs.org" # Not yet created
 Repository = "https://github.com/summersweet-software/comprehensiveconfig"
 Issues = "https://github.com/summersweet-software/comprehensiveconfig/issues"
 Documentation = "https://comprehensiveconfig.readthedocs.io/en/"
