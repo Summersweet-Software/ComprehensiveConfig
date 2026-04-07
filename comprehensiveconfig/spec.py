@@ -137,6 +137,8 @@ class ConfigurationField[T](BaseConfigurationField):
         return instance._value[self._field_variable]
 
     def __set__(self, instance, value: T):
+        if self._field_variable not in instance._value.keys():
+            raise KeyError(self._field_variable)
         instance._value[self._field_variable] = value
 
 
@@ -489,8 +491,15 @@ class Table[K, V](ConfigurationField):
         *args,
         **kwargs,
     ):
+        if not isinstance(key_type, BaseConfigurationField):
+            assert TypeError("key_type must be an instance of `BaseConfigurationField`")
+        if not isinstance(value_type, BaseConfigurationField):
+            assert TypeError(
+                "value_type must be an instance of `BaseConfigurationField`"
+            )
         self.key_type = fix_unions(key_type)
         self.value_type = fix_unions(value_type)
+
         self._sorting_order = max(
             self.key_type._sorting_order, self.value_type._sorting_order
         )
@@ -498,6 +507,7 @@ class Table[K, V](ConfigurationField):
         return super().__init__(default_value, *args, **kwargs)
 
     def __call__(self, value: dict[K, V]) -> dict[K, V]:
+        self._validate_value(value, self._name)
         return {self.key_type(key): self.value_type(val) for key, val in value.items()}
 
     def __get__(self, instance, owner) -> dict[K, V]:
@@ -524,6 +534,74 @@ class Table[K, V](ConfigurationField):
                 self.value_type._validate_value(
                     val, f"{name or self._name}[{key}] (value)"
                 )
+
+
+class List[T](ConfigurationField):
+    """List field"""
+
+    __slots__ = "inner_type"
+
+    _holds: list[T]
+
+    def __init__(
+        self,
+        default_value: list[T] = [],
+        /,
+        inner_type: AnyConfigField | None = None,
+        *args,
+        **kwargs,
+    ):
+        self.inner_type = fix_unions(inner_type)
+
+        return super().__init__(default_value, *args, **kwargs)
+
+    def __call__(self, value: list[T]) -> list[T]:
+        self._validate_value(value, self._name)
+        return [self.inner_type(val) for val in value]
+
+    def __get__(self, instance, owner) -> list[T]:
+        return super().__get__(instance, owner)
+
+    def __set__(self, instance, value: list[T]):
+        super().__set__(instance, value)
+
+    def _validate_value(self, value: Any, name: str | None = None, /):
+        super()._validate_value(value, name)
+        if not isinstance(value, list):
+            raise ValueError(
+                f"Field: {name or self._name}\nValue was not a valid list: {value}"
+            )
+
+        match self.inner_type:
+            case None:
+                return
+            case type():
+                raise ValueError(self.inner_type)
+
+            case BaseConfigurationField():
+                for c, item in enumerate(value):
+                    self.inner_type._validate_value(item, f"{name or self._name}[{c}]")
+
+
+class Float(ConfigurationField):
+    """Floating point field"""
+
+    __slots__ = ()
+
+    _holds: float
+
+    def __get__(self, instance, owner) -> float:
+        return super().__get__(instance, owner)
+
+    def __set__(self, instance, value: float):
+        super().__set__(instance, value)
+
+    def _validate_value(self, value: Any, name: str | None = None, /):
+        super()._validate_value(value)
+        if not isinstance(value, (float, int)):
+            raise ValueError(
+                f"Field: {name or self._name}\nValue was not a valid number: {repr(value)}"
+            )
 
 
 class Integer(ConfigurationField):

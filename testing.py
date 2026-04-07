@@ -65,6 +65,7 @@ class MyConfigSpec(
 print(MyConfigSpec.some_field)
 print(MyConfigSpec.MySection.other_field)
 MyConfigSpec.some_field = 12.2
+print("clump")
 print(MyConfigSpec.some_field)
 print(MyConfigSpec.MySection.other_field)
 

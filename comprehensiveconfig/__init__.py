@@ -48,11 +48,11 @@ class _ConfigSpecMeta(type):
 
         return super().__getattribute__(name)
 
-    def __setattribute__(self, name, value):
+    def __setattr__(self, name, value):
         """set attributes from active instance if available"""
         inst = object.__getattribute__(self, "_INST")
         if inst is not None and name in inst._ALL_FIELDS.keys():
-            return inst.__setattribute__(name, value)
+            return inst.__setattr__(name, value)
 
         return super().__setattr__(name, value)
 

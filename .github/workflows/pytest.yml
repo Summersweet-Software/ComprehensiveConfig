@@ -1,0 +1,25 @@
+name: Run Python Tests
+
+on:
+  push:
+    branches: [ "master", "staging"]
+  pull_request:
+    branches: [ "master", "staging" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Install the latest version of uv
+      uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57
+      with:
+        enable-cache: true
+
+    - name: run tests
+      run: uv run pytest
