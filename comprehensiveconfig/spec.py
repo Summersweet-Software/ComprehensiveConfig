@@ -788,7 +788,7 @@ class ConfigObject[T: ConfigObjectType](ConfigurationField):
     These include:
         - `__write_toml_value__(field, value) -> str` (writing a regular toml-parsable value as a string)
         - `__write_toml_full__(field, value) -> str` (Directly write line(s) of toml when encountering this object)
-        - `__write_json_value__(field, value) -> int | float | datetime() | str | None` \
+        - `__write_json_value__(field, value) -> int | float | datetime | str | None` \
             (When encountering this object- convert it to a json serializable format)
     """
 

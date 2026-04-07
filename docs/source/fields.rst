@@ -4,6 +4,9 @@ Fields
 .. py:currentmodule:: comprehensiveconfig.spec
 
 
+.. role:: pycode(code)
+   :language: python
+
 
 Fields are the most basic unit in Comprehensive Config. They are used to define named values in your configuration file.
 
@@ -237,3 +240,37 @@ Module
         :type: dict[Any, T]
 
         A reversed mapping of values and enum variants (instances) in the enumeration type
+
+.. py:class:: comprehensiveconfig.spec.ConfigObjectType[T](Protocol)
+
+    A protocol that describes exactly what any serializable object must contain.
+
+    .. py:classmethod:: from_config(config_value: Any)
+
+        :param Any ConfigValue: The incoming value when we want to construct an object of :py:type:`T` from a configuration file being loaded.
+
+
+
+.. py:class:: comprehensiveconfig.spec.ConfigObject[T: ConfigObjectType](_type: Type[T], default_value: T | _NoDefaultValueT = NoDefaultValue, /, *args, **kwargs)
+
+    :param Type[T] _type: The class of the enum we want to represent in this field.
+    :param T | NoDefaultValue default_value: Default value of our field
+
+    This is a way to use an existing python enum (:py:class:`enum.Enum`) as a validated field.
+
+    .. important::
+
+        Objects must be supported by the specific writer (:py:class:`comprehensiveconfig.configio.ConfigurationWriter`) or must
+        implement any necessary magic methods required to have them work generically in an existing config-writer.
+
+        This (by default) includes:
+            - :pycode:`def __write_toml_value__(self, field, value) -> str` (writing a regular toml-parsable value as a string)
+            - :pycode:`def __write_toml_full__(self, field, value) -> str` (Directly write line(s) of toml when encountering this object)
+            - :pycode:`def __write_json_value__(self, field, value) -> int | float | datetime | str | None` (When encountering this object- convert it to a json serializable format)
+
+    .. py:attribute:: _holds
+        :type: T
+
+    .. py:attribute:: _Type
+        :type: Type[T]
+
