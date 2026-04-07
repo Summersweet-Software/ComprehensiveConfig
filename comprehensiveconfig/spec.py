@@ -3,7 +3,7 @@ import enum
 import re
 from types import UnionType
 import types
-from typing import Any, Self, Type, Union
+from typing import Any, Protocol, Self, Type, Union
 import typing
 
 
@@ -51,7 +51,7 @@ class BaseConfigurationField(ABC):
 
     __slots__ = ("_field_variable", "_parent", "_value")
 
-    _parent: Type[Self] | None
+    _parent: Type["BaseConfigurationField"] | None
     """The parent to this node"""
 
     _field_variable: None | str
@@ -177,7 +177,7 @@ class Section(BaseConfigurationField, metaclass=ConfigurationFieldABCMeta):
 
     __slots__ = "_value"
 
-    _FIELDS: dict[str, AnyConfigField]
+    _FIELDS: dict[str, ConfigurationField]
     _SECTIONS: dict[str, Type]
     _ALL_FIELDS: dict[str, AnyConfigField | Type]
     _FIELD_NAME_MAP: dict[str, str]
@@ -772,6 +772,69 @@ class ConfigEnum[T](ConfigurationField):
         super()._validate_value(self.get_value(value), name)
 
 
+class ConfigObjectType[T](Protocol):
+    """A protocol to define necessary methods for a ConfigObject field's type"""
+
+    @classmethod
+    def from_config(cls, config_value: Any) -> T:
+        """A constructor for this object if the value we are using comes from configuration"""
+        ...
+
+
+class ConfigObject[T: ConfigObjectType](ConfigurationField):
+    """A custom object field allowing you to write arbitrary objects that are supported by the writer you are using.
+    This can also be used for objects that implement writer-specific magic-methods.
+
+    These include:
+        - `__write_toml_value__(field, value) -> str` (writing a regular toml-parsable value as a string)
+        - `__write_toml_full__(field, value) -> str` (Directly write line(s) of toml when encountering this object)
+        - `__write_json_value__(field, value) -> int | float | datetime() | str | None` \
+            (When encountering this object- convert it to a json serializable format)
+    """
+
+    __slots__ = "_type"
+    __match_args__ = ("_type", "_by_name")
+
+    _holds: T
+
+    _type: Type[T]
+    """The object type"""
+
+    def __init__(
+        self,
+        _type: Type[T],
+        default_value: T | _NoDefaultValueT = NoDefaultValue,
+        /,
+        *args,
+        **kwargs,
+    ):
+        self._type = _type
+        return super().__init__(default_value, *args, **kwargs)
+
+    def get_value(self, value: Any):
+        if isinstance(value, self._type):
+            return value
+        return self.__call__(value)
+
+    def __call__(self, value: Any):
+        if isinstance(value, self._type):
+            return value
+        return self._type.from_config(value)
+
+    def __get__(self, instance, owner) -> T:
+        return super().__get__(instance, owner)
+
+    def __set__(self, instance, value: T | Any):
+        if isinstance(value, self._type):
+            return super().__set__(instance, value)
+        super().__set__(instance, self.get_value(value))
+
+    def _validate_value(self, value: Any, name: str | None = None, /):
+        if isinstance(value, self._type):
+            super()._validate_value(value, name)
+        super()._validate_value(self.get_value(value), name)
+
+
 __all__ = [
     "ConfigurationField",
     "NoDefaultValue",
@@ -785,4 +848,5 @@ __all__ = [
     "TableSpec",
     "List",
     "ConfigEnum",
+    "ConfigObject",
 ]
