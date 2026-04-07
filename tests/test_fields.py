@@ -318,7 +318,7 @@ def test_comments_appear_in_output(filename: str, writer):
     assert '"clean"  # Example doc 1' in toml_output  # ensure exists and *is* inlined
 
 
-@pytest.mark.parametrize(("filename", "writer"), [toml_config])
+@pytest.mark.parametrize(("filename", "writer"), parameterize_values)
 def test_trailing_spaces(filename: str, writer):
     """ensure final outputs have NO trailing spaces"""
 
@@ -356,8 +356,15 @@ def test_trailing_spaces(filename: str, writer):
             [10, 20, 30], inner_type=comprehensiveconfig.spec.Integer()
         )
 
+        test_enum_value = comprehensiveconfig.spec.ConfigEnum(
+            ExampleEnum, ExampleEnum.example
+        )
+        test_enum_name = comprehensiveconfig.spec.ConfigEnum(
+            ExampleEnum, ExampleEnum.example, by_name=True
+        )
+
     output: str = writer.dumps(Foo._INST)
     assert output
 
     for line in output.split("\n"):
-        assert not line.endswith(" ")
+        assert not line.endswith(" "), f'"{line}"'
