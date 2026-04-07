@@ -137,6 +137,8 @@ class ConfigurationField[T](BaseConfigurationField):
         return instance._value[self._field_variable]
 
     def __set__(self, instance, value: T):
+        if self._field_variable not in instance._value.keys():
+            raise KeyError(self._field_variable)
         instance._value[self._field_variable] = value
 
 
