@@ -67,7 +67,7 @@ class TomlWriter(configio.ConfigurationWriter):
         ]
 
     @classmethod
-    def format_value(cls, value):
+    def format_value(cls, value) -> str:
         match value:
             case int() | float():
                 return str(value)
