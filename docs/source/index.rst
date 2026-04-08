@@ -35,6 +35,13 @@ loading as well as complex validators for incoming configuration values.
    json_writer.rst
    toml_writer.rst
 
+.. toctree::
+    :glob:
+    :maxdepth: 3
+    :caption: Utilities:
+
+    utilities.rst
+
 Module
 ********
 

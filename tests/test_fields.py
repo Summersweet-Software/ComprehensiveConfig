@@ -1,4 +1,5 @@
 import enum
+from typing import Any, Self
 
 import pytest
 
@@ -246,6 +247,57 @@ def test_section_w_field_w_name_field_auto_create(filename, writer):
         assert False
     except ValueError:
         assert Foo.Bar.test == "bean"
+
+
+@pytest.mark.parametrize(("filename", "writer"), parameterize_values)
+def test_config_object(filename, writer):
+    class SomethingCool:
+        @classmethod
+        def from_config(cls, config_value: Any) -> Self:
+            if not isinstance(config_value, str):
+                raise ValueError(config_value)
+            return cls(config_value)
+
+        def __init__(self, value: str):
+            self.value = value
+
+        def __write_toml_value__(self, field, value: str) -> str:
+            return self.value
+
+        def __write_json_value__(self, field, value: str) -> str:
+            return self.value
+
+        def __eq__(self, other):
+            return isinstance(other, SomethingCool) and self.value == other.value
+
+    class Foo(
+        comprehensiveconfig.ConfigSpec,
+        auto_load=True,
+        writer=writer,
+        default_file=filename,
+        create_file=True,
+    ):
+        """Basic config"""
+
+        test = comprehensiveconfig.spec.ConfigObject(
+            SomethingCool, SomethingCool("jenkins")
+        )
+
+    assert Foo.test.value == "jenkins"
+    assert isinstance(Foo.test, SomethingCool)
+
+    assert Foo.test == SomethingCool("jenkins")
+    Foo.test = SomethingCool("flankins")
+    assert Foo.test == SomethingCool("flankins")
+
+    try:
+        Foo.test = 12
+        assert False
+    except ValueError:
+        assert Foo.test == SomethingCool("flankins")
+
+    output: str = writer.dumps(Foo._INST)
+    assert output
 
 
 @pytest.mark.parametrize(("filename", "writer"), parameterize_values)
