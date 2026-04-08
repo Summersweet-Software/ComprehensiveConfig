@@ -29,4 +29,6 @@ jobs:
       - name: Smoke test (source distribution)
         run: uv run --isolated --no-project --with dist/*.tar.gz testing.py
       - name: Publish
+        env:
+          TEST_PYPI_SECRET_KEY: ${{ secrets.TEST_PYPI_SECRET_KEY }}
         run: uv publish --index testpypi --token $TEST_PYPI_SECRET_KEY
