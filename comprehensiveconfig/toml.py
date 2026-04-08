@@ -32,9 +32,12 @@ def full_section_name(node) -> list[str]:
 
 class TomlWriter(configio.ConfigurationWriter):
     @classmethod
-    def dump_section(cls, node) -> list:
+    def dump_section(cls, node) -> list[str]:
+        """Dump a spec.Section node and return a list of output lines."""
         if " " in node._name:
             raise ValueError(node._name)
+
+        # "base" is all the junk/lines at the beginning of our section.
 
         if node._parent is not None:
             base = [f"\n[{'.'.join(full_section_name(node)[1:])}]"]
@@ -45,108 +48,139 @@ class TomlWriter(configio.ConfigurationWriter):
             for line in node.__doc__.split("\n"):
                 base.append(f"# {line}")
 
-        sorted_values: dict[int, dict[str, Any]] = {}
+        sorted_values: dict[int, dict[spec.ConfigurationField, Any]] = {}
         for name, value in node._value.items():
             field = node._ALL_FIELDS[name]
             if field._sorting_order not in sorted_values.keys():
-                sorted_values[field._sorting_order] = {name: value}
-                continue
-            sorted_values[field._sorting_order][name] = value
+                sorted_values[field._sorting_order] = {}
+            sorted_values[field._sorting_order][field] = value
 
         return [
-            *base,
-            *(
+            *base,  # dump all base lines
+            *(  # append all of these dumped fields as lines
                 (
                     "\n".join(cls.dump_section(value))
                     if isinstance(value, spec.Section)
-                    else cls.dump_field(node, name, node._FIELD_VAR_MAP[name], value)
+                    else cls.dump_field(field, value)
                 )
                 for sub_dict in sorted_values.values()
-                for name, value in sub_dict.items()
+                for field, value in sub_dict.items()
             ),
         ]
 
     @classmethod
-    def format_value(cls, value) -> str:
+    def format_value(cls, field, value) -> str:
+        """Format individual values into properly represented strings of valid toml values."""
         match value:
             case int() | float():
                 return str(value)
             case str():
                 return f'"{escape(value)}"'
             case list():
-                return f"[{", ".join([str(cls.format_value(inner_val)) for inner_val in value])}]"
+                return f"[{", ".join([str(cls.format_value(field, inner_val)) for inner_val in value])}]"
             case dict():
-                return f"{{ {", ".join([f"{key} = {cls.format_value(inner_val)}" for key, inner_val in value.items()])} }}"
+                return f"{{ {", ".join([f"{key} = {cls.format_value(field, inner_val)}" for key, inner_val in value.items()])} }}"
             case enum.Enum():
-                return f"{cls.format_value(value.value)}"
+                return f"{cls.format_value(field, value.value)}"
             case _:
+                # magic method to make writing new field types possible
+                if hasattr(value, "__write_toml_value__"):
+                    return str(value.__write_toml_value__(field, value))
+                # No known way exists to write this field:
                 raise ValueError(value)
 
     @classmethod
-    def dump_field(
-        cls, node: spec.AnyConfigField, original_name: str, field_name: str, value
-    ) -> str:
-        if isinstance(node, spec.Section):
-            field = node.get_field(original_name)
+    def dump_table(cls, table_node: spec.Table, value) -> str:
+        for name, val in value.items():
+            if not isinstance(val, spec.Section):
+                continue
+            val._name = name
+            val._parent = table_node
+
+        section_name = ".".join(full_section_name(table_node)[1:])
+
+        return f"\n[{section_name}]\n{"\n".join(cls.dumps(val) for key, val in value.items())}"
+
+    @classmethod
+    def create_basic_field_doc(cls, field: spec.ConfigurationField) -> str:
+        """generates our basic field_doc"""
+        if field._inline_doc and field.doc:
+            doc_comment = "  "
+        elif field.doc:
+            doc_comment = "\n"
         else:
-            field = node
+            return ""
+
+        return doc_comment + f"# {"\n# ".join(field.doc.split("\n"))}"
+
+    @classmethod
+    def dump_enum(cls, field: spec.ConfigEnum, value):
+        if isinstance(value, spec.Section):
+            return "\n".join(cls.dump_section(value))
+
+        by_name = field._by_name
+        field_doc = "  " if field._inline_doc and field.doc else "\n"
+
+        if field.doc:
+            field_doc += f"# {"\n# ".join(field.doc.split("\n"))}"
+
+        if field._enum.__doc__:
+            delimeter = "\n##  - "
+            doc_comment = f"# {"\n# ".join(field._enum.__doc__.split("\n"))}\n#"
+        else:
+            delimeter = "\n#  - "
+            doc_comment = ""
+
+        doc_comment += f"# Available Options for {field._name}:{delimeter}"
+        if by_name:
+            doc_comment += delimeter.join(
+                member for member in field._enum.__members__.keys()
+            )
+            return f"{field._name} = {cls.format_value(field, value.name)}{field_doc}\n{doc_comment}"
+        doc_comment += delimeter.join(
+            str(member.value) for member in field._enum.__members__.values()
+        )
+        return f"{field._name} = {cls.format_value(field, value.value)}{field_doc}\n{doc_comment}"
+
+    @classmethod
+    def dump_field(cls, field: spec.AnyConfigField, value) -> str:
+        """dump a field object given its value"""
         match field:
             case spec.Table(spec.Text(), type() | spec.ConfigUnion()) as table_node:
-                for name, val in value.items():
-                    if not isinstance(val, spec.Section):
-                        continue
-                    val._name = name
-                    val._parent = table_node
-
-                section_name = ".".join(full_section_name(table_node)[1:])
-
-                return f"\n[{section_name}]\n{"\n".join(cls.dumps(val) if isinstance(val, spec.Section) else cls.dump_field(val, key, key, val) for key, val in value.items())}"
+                return cls.dump_table(table_node, value)
             case spec.Section():
-                return "\n".join(cls.dump_section(node))
+                return "\n".join(cls.dump_section(field))
             case spec.ConfigEnum(_, by_name):
+                return cls.dump_enum(field, value)
+            case spec.ConfigurationField():
+                # magic method to make writing new field types possible
+                if hasattr(field, "__write_toml_full__"):
+                    return str(value.__write_toml_full__(field, value))
+
                 if isinstance(value, spec.Section):
                     return "\n".join(cls.dump_section(value))
 
-                field_doc = "  " if field._inline_doc and field.doc else "\n"
-
-                if field.doc:
-                    field_doc += f"# {"\n# ".join(field.doc.split("\n"))}"
-
-                if field._enum.__doc__:
-                    delimeter = "\n##  - "
-                    doc_comment = f"# {"\n# ".join(field._enum.__doc__.split("\n"))}\n#"
-                else:
-                    delimeter = "\n#  - "
-                    doc_comment = ""
-
-                doc_comment += f"# Available Options for {field_name}:{delimeter}"
-                if by_name:
-                    doc_comment += delimeter.join(
-                        member for member in field._enum.__members__.keys()
-                    )
-                    return f"{field_name} = {cls.format_value(value.name)}{field_doc}\n{doc_comment}"
-                doc_comment += delimeter.join(
-                    str(member.value) for member in field._enum.__members__.values()
-                )
-                return f"{field_name} = {cls.format_value(value.value)}{field_doc}\n{doc_comment}"
+                return f"{field._name} = {cls.format_value(field, value)}{cls.create_basic_field_doc(field)}"
             case _:
-                if isinstance(value, spec.Section):
-                    return "\n".join(cls.dump_section(value))
-                real_field = node._ALL_FIELDS[original_name]
-                doc_comment = (
-                    "  " if real_field._inline_doc and real_field.doc else "\n"
-                )
-
-                if real_field.doc:
-                    doc_comment += f"# {"\n# ".join(real_field.doc.split("\n"))}"
-                return f"{field_name} = {cls.format_value(value)}{doc_comment}"
+                # magic method to make writing new field types possible
+                if hasattr(field, "__write_toml_full__"):
+                    return str(value.__write_toml_full__(field, value))
+                # No known way exists to write this field:
+                raise ValueError(field)
 
     @classmethod
     def dumps(cls, node) -> str:
         match node:
             case spec.Section():
                 return "\n".join(cls.dump_section(node))
-
+            case spec.ConfigurationField():
+                # Dump passed in node to the best of our ability. This typically looks like dumping its default value
+                if not node._has_default:
+                    raise ValueError("Node does not have a default value")
+                return cls.dump_field(
+                    node,
+                    node._default_value,
+                )
             case _:
                 raise ValueError(node)
 
@@ -161,5 +195,6 @@ class TomlWriter(configio.ConfigurationWriter):
                 return tomllib.load(f)
         return tomllib.load(file)
 
-    # just alias the name
-    loads = tomllib.loads
+    @classmethod
+    def loads(cls, data: str) -> dict[str, Any]:
+        return tomllib.loads(data)

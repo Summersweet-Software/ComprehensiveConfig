@@ -19,3 +19,10 @@
     writers.rst
     json_writer.rst
     toml_writer.rst
+
+.. toctree::
+    :glob:
+    :maxdepth: 2
+    :caption: Utilities:
+
+    utilities.rst
