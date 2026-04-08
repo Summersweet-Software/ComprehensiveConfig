@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+from typing import Any
 from . import configio
 from . import spec
 
@@ -66,5 +67,6 @@ class JsonWriter(configio.ConfigurationWriter):
                 return json.load(f)
         return json.load(file)
 
-    # just alias the name
-    loads = json.loads
+    @classmethod
+    def loads(cls, data: str) -> dict[str, Any]:
+        return json.loads(data)
