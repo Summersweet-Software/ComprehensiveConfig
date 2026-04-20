@@ -28,7 +28,6 @@ def test_blank_spec_create_auto_load_failure(filename, writer):
 
         assert False
     except ValueError:
-        type Foo = object
         assert True
 
 
