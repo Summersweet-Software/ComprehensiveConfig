@@ -27,8 +27,8 @@ class ConfigurationWriter(ABC):
 
     @classmethod
     @abstractmethod
-    def loads(cls, file) -> dict[str, Any]:
-        """load a file by name"""
+    def loads(cls, data: str) -> dict[str, Any]:
+        """load configuration string"""
         pass
 
     @classmethod

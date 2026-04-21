@@ -1,0 +1,40 @@
+import os
+import tomllib
+
+# Configuration file for the Sphinx documentation builder.
+#
+# For the full list of built-in configuration values, see the documentation:
+# https://www.sphinx-doc.org/en/master/usage/configuration.html
+
+# -- Project information -----------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+
+project = "Comprehensive Config"
+copyright = "2026, Summersweet Software"
+author = "Summersweet Software"
+
+# Automatic versioning
+with open(f"{os.getcwd()}/../../pyproject.toml", "r") as f:
+    pyproj = tomllib.loads(f.read())
+    release = pyproj["project"]["version"]
+
+# -- General configuration ---------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+
+extensions = ["sphinx.ext.intersphinx"]
+
+templates_path = ["_templates"]
+exclude_patterns = []
+
+
+# -- Options for HTML output -------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
+
+html_logo = "_static/summer-sweet-colorful.png"
+html_theme = "sphinx_rtd_theme"
+html_static_path = ["_static"]
+html_sidebars = {
+    "**": [
+        "globaltoc.html",
+    ]
+}

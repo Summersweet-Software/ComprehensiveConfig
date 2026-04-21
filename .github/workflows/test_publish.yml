@@ -1,0 +1,36 @@
+name: "Test Publish"
+
+on:
+  push:
+    branches: [ "main", "staging"]
+  pull_request:
+    branches: [ "main", "staging" ]
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Install Python 3.13
+        run: uv python install 3.13
+      - name: Build
+        run: |
+          uv version --bump patch --bump dev=$RANDOM # random version id
+          uv build
+      # Check that basic features work and we didn't miss to include crucial files
+      - name: Smoke test (wheel)
+        run: uv run --isolated --no-project --with dist/*.whl testing.py
+      - name: Smoke test (source distribution)
+        run: uv run --isolated --no-project --with dist/*.tar.gz testing.py
+      - name: Publish
+        env:
+          TEST_PYPI_SECRET_KEY: ${{ secrets.TEST_PYPI_SECRET_KEY }}
+        run: uv publish --index testpypi --token $TEST_PYPI_SECRET_KEY
