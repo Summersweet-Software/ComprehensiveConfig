@@ -72,10 +72,10 @@ class TomlWriter(configio.ConfigurationWriter):
     def format_value(cls, field, value) -> str:
         """Format individual values into properly represented strings of valid toml values."""
         match value:
-            case int() | float():
-                return str(value)
             case bool():
                 return "true" if value else "false"
+            case int() | float():
+                return str(value)
             case str():
                 return f'"{escape(value)}"'
             case list():

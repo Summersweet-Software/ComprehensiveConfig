@@ -3,6 +3,7 @@ from enum import Enum
 from comprehensiveconfig import ConfigSpec
 from comprehensiveconfig.json import JsonWriter
 from comprehensiveconfig.spec import (
+    Boolean,
     Table,
     TableSpec,
     Section,
@@ -47,6 +48,7 @@ class MyConfigSpec(
         password = Text("MyPassword")
 
     some_field = Float(6.9)
+    some_bool = Boolean(True)
     example_list_field = List(
         ["12", "13", "14", 22], inner_type=Text(regex=r"[0-9]*") | Integer()
     )
