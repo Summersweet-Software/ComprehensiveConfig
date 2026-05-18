@@ -74,6 +74,8 @@ class TomlWriter(configio.ConfigurationWriter):
         match value:
             case int() | float():
                 return str(value)
+            case bool():
+                return "true" if value else "false"
             case str():
                 return f'"{escape(value)}"'
             case list():

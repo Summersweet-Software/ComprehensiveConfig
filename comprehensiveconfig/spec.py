@@ -321,27 +321,6 @@ class Section(BaseConfigurationField, metaclass=ConfigurationFieldABCMeta):
         return False
 
 
-class Float(ConfigurationField):
-    """Floating point field"""
-
-    __slots__ = ()
-
-    _holds: float
-
-    def __get__(self, instance, owner) -> float:
-        return super().__get__(instance, owner)
-
-    def __set__(self, instance, value: float):
-        super().__set__(instance, value)
-
-    def _validate_value(self, value: Any, name: str | None = None, /):
-        super()._validate_value(value)
-        if not isinstance(value, (float, int)):
-            raise ValueError(
-                f"Field: {name or self._name}\nValue was not a valid number: {repr(value)}"
-            )
-
-
 class List[T](ConfigurationField):
     """List field"""
 
@@ -581,6 +560,27 @@ class List[T](ConfigurationField):
             case BaseConfigurationField():
                 for c, item in enumerate(value):
                     self.inner_type._validate_value(item, f"{name or self._name}[{c}]")
+
+
+class Boolean(ConfigurationField):
+    """Boolean (true/false) field"""
+
+    __slots__ = ()
+
+    _holds: bool
+
+    def __get__(self, instance, owner) -> bool:
+        return super().__get__(instance, owner)
+
+    def __set__(self, instance, value: bool):
+        super().__set__(instance, value)
+
+    def _validate_value(self, value: Any, name: str | None = None, /):
+        super()._validate_value(value)
+        if not isinstance(value, bool):
+            raise ValueError(
+                f"Field: {name or self._name}\nValue was not a valid boolean: {repr(value)}"
+            )
 
 
 class Float(ConfigurationField):
@@ -840,6 +840,7 @@ __all__ = [
     "NoDefaultValue",
     "_NoDefaultValueT",
     "Section",
+    "Boolean",
     "Float",
     "Integer",
     "Number",
