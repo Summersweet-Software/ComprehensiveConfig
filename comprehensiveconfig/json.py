@@ -31,7 +31,7 @@ class JsonWriter(configio.ConfigurationWriter):
                 return value.name
             case spec.ConfigEnum(_, False):
                 return value.value
-            case str() | int() | float() | datetime() | dict() | None:
+            case str() | int() | float() | bool() | datetime() | dict() | None:
                 return value
             case _:
                 # magic method to make writing new field types possible

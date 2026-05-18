@@ -398,6 +398,7 @@ def test_trailing_spaces(filename: str, writer):
         )
         test_int = comprehensiveconfig.spec.Integer(20)
         test_float = comprehensiveconfig.spec.Float(20.20)
+        test_bool = comprehensiveconfig.spec.Boolean(True)
         test_dict = comprehensiveconfig.spec.Table(
             {10: "burgers"},
             key_type=comprehensiveconfig.spec.Integer(),
