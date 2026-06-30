@@ -98,6 +98,11 @@ Module
 
         Whether a doc comment should be rendered on the same line as the field (on formats that support comments)
 
+.. py:class:: comprehensiveconfig.spec.Boolean(*args, **kwargs)
+
+    .. py:attribute:: _holds
+        :type: bool
+
 .. py:class:: comprehensiveconfig.spec.Integer(*args, **kwargs)
 
     .. py:attribute:: _holds
