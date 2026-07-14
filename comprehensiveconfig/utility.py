@@ -36,6 +36,8 @@ class ConfigurationWriterTestCase(
         [10, 20, 30], inner_type=comprehensiveconfig.spec.Integer()
     )
 
+    test_path = comprehensiveconfig.spec.PathField("C:/Windows/")
+
     test_enum_value = comprehensiveconfig.spec.ConfigEnum(
         ExampleEnum, ExampleEnum.example
     )

@@ -1,10 +1,19 @@
 from abc import ABC, ABCMeta, abstractmethod
 import enum
+from pathlib import Path
 import re
+import sys
 from types import UnionType
 import types
 from typing import Any, Protocol, Self, Type, Union
 import typing
+
+from comprehensiveconfig.validators import (
+    validate_path_agnostic,
+    validate_path_sys_aware,
+    validate_path_unix,
+    validate_path_windows,
+)
 
 
 class _NoDefaultValueT:
@@ -636,6 +645,8 @@ class Text(ConfigurationField):
 
     _holds: str
 
+    _regex_pattern: str
+
     def __init__(
         self,
         default_value: str | _NoDefaultValueT = NoDefaultValue,
@@ -663,6 +674,111 @@ class Text(ConfigurationField):
             raise ValueError(
                 f'Field: {name or self._name}\n"{value}" did not match regex pattern: {self._regex_pattern}'
             )
+
+
+class PathField(ConfigurationField):
+    """A Folder/file Path that is validated to ensure it is a valid* filepath
+    validity does not mean the path exists.
+
+    __This is not a bug__
+
+    This is to allow users of this class to decide how *they*
+    want to handle file/folders not existing.
+    For example, they might want to create the folder themselves.
+    A user might also be referencing a file on a *different* filesystem!
+    """
+
+    __slots__ = "_path_type", "_path_validator"
+
+    class PathType(enum.IntEnum):
+        """Determines what you want the path's to point to (files or directories)"""
+
+        directory = enum.auto()
+        file = enum.auto()
+        directory_or_file = enum.auto()
+        """Disables this type of check"""
+
+    class PathValidator(enum.IntEnum):
+        """Determines which validation strategy for the path"""
+
+        windows = enum.auto()
+        unix = enum.auto()
+        agnostic = enum.auto()
+        """Doesn't care if the path is for windows or unix/linux"""
+        current_system = enum.auto()
+        """ensures that the path is valid for the current system/os."""
+
+    _holds: Path
+
+    _path_type: PathType
+    _path_validator: PathValidator
+
+    def __init__(
+        self,
+        default_value: str | Path | _NoDefaultValueT = NoDefaultValue,
+        /,
+        path_type: PathType = PathType.directory_or_file,
+        path_validator: PathValidator = PathValidator.agnostic,
+        *args,
+        **kwargs,
+    ):
+        super().__init__(default_value, *args, **kwargs)
+        self._path_type = path_type
+        self._path_validator = path_validator
+
+    def __get__(self, instance, owner) -> Path:
+        return super().__get__(instance, owner)
+
+    def __set__(self, instance, value: str | Path):
+        if isinstance(value, str):
+            value = Path(value)
+        super().__set__(instance, value)
+
+    def _validate_value(self, value: Any, name: str | None = None, /):
+        super()._validate_value(value)
+
+        if isinstance(value, str):
+            value = Path(value)
+
+        if not isinstance(value, Path):
+            raise ValueError(
+                f"Field: {name or self._name}\nValue was not a valid Path object: {value}"
+            )
+
+        is_valid = True
+        path_type_name = ""
+
+        # Validate the file path for the specified system
+        match self._path_validator:
+            case PathField.PathValidator.windows:
+                is_valid = validate_path_windows(str(value))
+                path_type_name = "windows "
+            case PathField.PathValidator.unix:
+                is_valid = validate_path_unix(str(value))
+                path_type_name = "unix "
+            case PathField.PathValidator.agnostic:
+                is_valid = validate_path_agnostic(str(value))
+            case PathField.PathValidator.current_system:
+                is_valid = validate_path_sys_aware(str(value))
+                path_type_name = "windows " if sys.platform == "win32" else "unix "
+
+        if not is_valid:
+            raise ValueError(
+                f"Field: {name or self._name}\nValue was not a valid {path_type_name}path: {value}"
+            )
+
+        # verify the type of object the path points to is what we expect.
+        match self._path_type:
+            case PathField.PathType.directory:
+                if value.is_file():
+                    raise ValueError(
+                        f"Field: {name or self._name}\nValue was not a valid directory: {value}"
+                    )
+            case PathField.PathType.file:
+                if value.is_dir():
+                    raise ValueError(
+                        f"Field: {name or self._name}\nValue was not a valid file: {value}"
+                    )
 
 
 class ConfigUnion[L, R](ConfigurationField):
@@ -848,6 +964,7 @@ __all__ = [
     "Table",
     "TableSpec",
     "List",
+    "PathField",
     "ConfigEnum",
     "ConfigObject",
 ]

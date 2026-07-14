@@ -9,7 +9,7 @@ OUTPUT_DIR = "tests/output_files/"
 
 
 @pytest.fixture(autouse=True, scope="function")
-def managed_context(filename, writer):
+def managed_context(*_):
     """Manages our files per test"""
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     yield

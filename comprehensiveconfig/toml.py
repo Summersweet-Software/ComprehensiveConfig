@@ -1,4 +1,5 @@
 import enum
+from pathlib import Path
 import tomllib
 from typing import Any
 from . import configio
@@ -74,7 +75,7 @@ class TomlWriter(configio.ConfigurationWriter):
         match value:
             case bool():
                 return "true" if value else "false"
-            case int() | float():
+            case int() | float() | Path():
                 return str(value)
             case str():
                 return f'"{escape(value)}"'

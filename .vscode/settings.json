@@ -1,3 +1,7 @@
 {
-    "mypy.enabled": true
+    "mypy.enabled": true,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true
+    }
 }
