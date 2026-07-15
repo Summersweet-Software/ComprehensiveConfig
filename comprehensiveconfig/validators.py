@@ -2,8 +2,9 @@
 
 import sys
 
+# unix
 NULL_BYTE = "\x00"
-
+# windows
 DEVICE_PATH_PREFIX = "\\\\?\\"
 DEVICE_PATH_NORMALIZED_PREFIX = "\\\\.\\"
 BANNED_WINDOWS_NAMES = (
@@ -36,10 +37,7 @@ BANNED_WINDOWS_NAMES = (
 
 def validate_path_unix(path: str) -> bool:
     """Takes in a str filepath and validates whether or not it is valid on unix/linux"""
-    if NULL_BYTE in path:  # only invalid character
-        return False
-
-    return True
+    return NULL_BYTE not in path
 
 
 def validate_path_windows(path: str) -> bool:
@@ -109,3 +107,11 @@ def validate_path_sys_aware(path: str) -> bool:
         return validate_path_windows(path)
     else:
         return validate_path_unix(path)
+
+
+__all__ = [
+    "validate_path_unix",
+    "validate_path_windows",
+    "validate_path_agnostic",
+    "validate_path_sys_aware",
+]

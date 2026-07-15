@@ -13,8 +13,11 @@ A simple configuration library that lets you create a pydantic-like model for yo
 - [x] Supports static type checking
 - [x] toml writer
 - [x] json writer
-- [x] Number Fields
-- [x] Text Fields (with regex filtering)
+- [x] Number fields
+- [x] Text fields (with regex filtering)
+- [x] File/Folder path fields (`PathField`)
+  - [x] Ability to change validator (unix/linux, windows, agnostic, and current system)
+  - [x] Validate for only files, folder, or accept both.
 - [x] List fields
 - [x] Table fields
 - [x] TableSpec (Model) fields
@@ -22,7 +25,7 @@ A simple configuration library that lets you create a pydantic-like model for yo
 - [x] Include doc comments in Section
 - [x] auto loading
 - [x] initialize default config (with auto loader)
-- [ ] yaml writer
+- [N/a] yaml writer (This will likely be moved to a different library as an extension of comprehensiveconfig!)
 - [ ] Tests targetting mypy and other static type checkers to ensure EVERYTHING looks good across IDE's
 - [x] section list (via a Table field)
 - [x] Field type unions (overwriting normal union syntax)

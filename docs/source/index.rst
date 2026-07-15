@@ -41,6 +41,7 @@ loading as well as complex validators for incoming configuration values.
     :caption: Utilities:
 
     utilities.rst
+    validators.rst
 
 Module
 ********
