@@ -129,7 +129,7 @@ class ConfigurationField[T](BaseConfigurationField):
         if value is None and not self._nullable:
             raise ValueError(f'Field, "{name or self._name}", is not nullable')
 
-    def __or__(self, value: "type | AnyConfigField") -> "ConfigUnion":
+    def __or__(self, value: "ConfigSectionMeta | AnyConfigField") -> "ConfigUnion":
         return ConfigUnion(self, value)
 
     def __set_name__(self, owner, name):
@@ -188,6 +188,11 @@ class ConfigSectionMeta(ConfigurationFieldABCMeta):
     """Maps config names to their actual variable names"""
     _FIELD_VAR_MAP: dict[str, str]
     """Maps variable names to their actual config names"""
+
+    if typing.TYPE_CHECKING:
+
+        def _validate_value(self, value: Any, name: str | None = None, /): ...
+
 
 class Section(BaseConfigurationField, metaclass=ConfigSectionMeta):
     """A baseclass for sections to be defined"""
@@ -735,13 +740,13 @@ class ConfigUnion[L, R](ConfigurationField):
 
     _holds: L | R
 
-    _left_type: AnyConfigField | Type
-    _right_type: AnyConfigField | Type
+    _left_type: BaseConfigurationField | ConfigSectionMeta
+    _right_type: BaseConfigurationField | ConfigSectionMeta
 
     def __init__(
         self,
-        left_type: AnyConfigField | Type,
-        right_type: AnyConfigField | Type,
+        left_type: AnyConfigField | ConfigSectionMeta,
+        right_type: AnyConfigField | ConfigSectionMeta,
         *args,
         **kwargs,
     ):
