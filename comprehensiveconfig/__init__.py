@@ -116,7 +116,9 @@ class ConfigSpec(spec.Section, metaclass=_ConfigSpecMeta):
 
         return cls(writer.load(file))
 
-    def save(self, file=None, writer=None, /):
+    def save(
+        self, file=None, writer: Type[configio.ConfigurationWriter] | None = None, /
+    ):
         file = file or self._DEFAULT_FILE
         writer = writer or self._WRITER
 
