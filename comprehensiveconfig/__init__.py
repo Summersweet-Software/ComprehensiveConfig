@@ -1,4 +1,3 @@
-from abc import ABCMeta
 import os
 from typing import Any, Self, Type, Union
 
@@ -9,7 +8,7 @@ from .json import JsonWriter
 from .toml import TomlWriter
 
 
-class _ConfigSpecMeta(type):
+class _ConfigSpecMeta(spec.ConfigSectionMeta):
     """handles getting of attributes"""
 
     _WRITER: Type[configio.ConfigurationWriter] | None
@@ -22,24 +21,20 @@ class _ConfigSpecMeta(type):
         cls,
         name,
         bases,
-        attrs,
+        namespace,
         default_file: str | None = None,  # automatically load a specific file
         writer=None,
         create_file: bool = False,  # create the default file if not exists
         auto_load: bool = True,
         **kwargs,
     ):
-        cls._DEFAULT_FILE = default_file
-        cls._WRITER = writer
-        cls._INST = None
-        cls._CREATE_FILE = create_file
-        cls._AUTO_LOAD = auto_load
-        return super().__new__(cls, name, bases, attrs)
+        namespace["_INST"] = None
+        namespace["_DEFAULT_FILE"] = default_file
+        namespace["_WRITER"] = writer
+        namespace["_CREATE_FILE"] = create_file
+        namespace["_AUTO_LOAD"] = auto_load
 
-    def __get__(self, instance, owner):
-        if self._INST is None:
-            return self
-        return self._INST
+        return super().__new__(cls, name, bases, namespace)
 
     def __getattribute__(self, name):
         """get attributes from active instance if available"""
@@ -58,18 +53,14 @@ class _ConfigSpecMeta(type):
         return super().__setattr__(name, value)
 
 
-class _ConfigSpecABCMeta(spec.ConfigurationFieldABCMeta, _ConfigSpecMeta):
-    """A combination of ABCMeta and config spec meta"""
-
-
-class ConfigSpec(spec.Section, metaclass=_ConfigSpecABCMeta):
+class ConfigSpec(spec.Section, metaclass=_ConfigSpecMeta):
 
     @classmethod
     def __init_subclass__(
         cls,
         **kwargs,
     ):
-        super().__init_subclass__(**kwargs)
+        super().__init_subclass__()
         if not cls._AUTO_LOAD:
             return
 
@@ -84,6 +75,7 @@ class ConfigSpec(spec.Section, metaclass=_ConfigSpecABCMeta):
             cls._INST = cls(cls._WRITER.load(cls._DEFAULT_FILE))
         if not exists and cls._CREATE_FILE:
             default = cls()
+            print(cls._WRITER)
             cls._WRITER.dump(cls._DEFAULT_FILE, default)
             cls._INST = default
         if not exists and not cls._CREATE_FILE:
@@ -146,7 +138,6 @@ class ConfigSpec(spec.Section, metaclass=_ConfigSpecABCMeta):
 __all__ = [
     "ConfigSpec",
     "_ConfigSpecMeta",
-    "_ConfigSpecABCMeta",
     "spec",
     "validators",
     "configio",

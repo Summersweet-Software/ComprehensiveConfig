@@ -60,9 +60,6 @@ class BaseConfigurationField(ABC):
 
     __slots__ = ("_field_variable", "_parent", "_value")
 
-    _parent: Type["BaseConfigurationField"] | None
-    """The parent to this node"""
-
     _field_variable: None | str
     """The python variable that this field is attached to"""
 
@@ -91,6 +88,8 @@ class ConfigurationField[T](BaseConfigurationField):
         "_inline_doc",
     )
 
+    _parent: "ConfigSectionMeta | None"
+    """The parent to this node"""
     _name: None | str
     """The actual name used inside the configuration
     This has to be valid for whatever config format you use"""
@@ -181,18 +180,19 @@ class SectionParent:
         instance._instance_parent = value
 
 
-class Section(BaseConfigurationField, metaclass=ConfigurationFieldABCMeta):
-    """A baseclass for sections to be defined"""
-
-    __slots__ = "_value"
-
+class ConfigSectionMeta(ConfigurationFieldABCMeta):
     _FIELDS: dict[str, ConfigurationField]
-    _SECTIONS: dict[str, Type]
-    _ALL_FIELDS: dict[str, AnyConfigField | Type]
+    _SECTIONS: dict[str, "ConfigSectionMeta"]
+    _ALL_FIELDS: dict[str, "ConfigurationField | ConfigSectionMeta"]
     _FIELD_NAME_MAP: dict[str, str]
     """Maps config names to their actual variable names"""
     _FIELD_VAR_MAP: dict[str, str]
     """Maps variable names to their actual config names"""
+
+class Section(BaseConfigurationField, metaclass=ConfigSectionMeta):
+    """A baseclass for sections to be defined"""
+
+    __slots__ = "_value"
     _name = SectionName()
     """The name in the configuration file (chooses between _real_name and _cls_name)"""
     _cls_name: str
@@ -220,14 +220,14 @@ class Section(BaseConfigurationField, metaclass=ConfigurationFieldABCMeta):
         cls._SECTIONS = {
             field_name: field
             for field_name, field in cls.__dict__.items()
-            if isinstance(field, type) and Section in field.__mro__
+            if isinstance(field, ConfigSectionMeta) and Section in field.__mro__
         }
         cls._ALL_FIELDS = cls._FIELDS | cls._SECTIONS
         for name, field in cls._ALL_FIELDS.items():
             field._field_variable = name
             if field._name is None:
                 field._name = name
-            if isinstance(field, type):
+            if isinstance(field, ConfigSectionMeta):
                 field._cls_parent = cls
             else:
                 field._parent = cls
@@ -330,64 +330,11 @@ class Section(BaseConfigurationField, metaclass=ConfigurationFieldABCMeta):
         return False
 
 
-class List[T](ConfigurationField):
-    """List field"""
-
-    __slots__ = "inner_type"
-
-    _holds: list[T]
-
-    def __init__(
-        self,
-        default_value: list[T] = [],
-        /,
-        inner_type: AnyConfigField | None = None,
-        *args,
-        **kwargs,
-    ):
-        self.inner_type = fix_unions(inner_type)
-
-        return super().__init__(default_value, *args, **kwargs)
-
-    def __call__(self, value: list[T]) -> list[T]:
-        return [self.inner_type(val) for val in value]
-
-    def __get__(self, instance, owner) -> list[T]:
-        return super().__get__(instance, owner)
-
-    def __set__(self, instance, value: list[T]):
-        super().__set__(instance, value)
-
-    def _validate_value(self, value: Any, name: str | None = None, /):
-        super()._validate_value(value)
-        if not isinstance(value, list):
-            raise ValueError(
-                f"Field: {name or self._name}\nValue was not a valid list: {value}"
-            )
-
-        match self.inner_type:
-            case None:
-                return
-            case type():
-                raise ValueError(self.inner_type)
-
-            case BaseConfigurationField():
-                for c, item in enumerate(value):
-                    self.inner_type._validate_value(item, f"{name or self._name}[{c}]")
-
-
-class TableSpec(ConfigurationField, metaclass=ConfigurationFieldABCMeta):
+class TableSpec(ConfigurationField, metaclass=ConfigSectionMeta):
     """A model/Table"""
 
     __slots__ = ()
 
-    _FIELDS: dict[str, AnyConfigField]
-    _SECTIONS: dict[str, Type]
-    _ALL_FIELDS: dict[str, AnyConfigField | Type]
-    _FIELD_NAME_MAP: dict[str, str]
-    """Maps config names to their actual variable names"""
-    _FIELD_VAR_MAP: dict[str, str]
-    """Maps variable names to their actual config names"""
     _cls_name: str
     """The actual name in the configuration file"""
     _cls_has_default: bool
@@ -408,7 +355,7 @@ class TableSpec(ConfigurationField, metaclass=ConfigurationFieldABCMeta):
         cls._SECTIONS = {
             field_name: field
             for field_name, field in cls.__dict__.items()
-            if isinstance(field, type) and Section in field.__mro__
+            if isinstance(field, ConfigSectionMeta) and Section in field.__mro__
         }
         cls._ALL_FIELDS = cls._FIELDS | cls._SECTIONS
         for name, field in cls._ALL_FIELDS.items():
