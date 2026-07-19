@@ -158,7 +158,7 @@ class SectionName:
     """Descriptor for section names.
     Chooses between class name and instance name automatically"""
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance, owner) -> str:
         if instance is None:
             return object.__getattribute__(owner, "_cls_name")
         return object.__getattribute__(instance, "_instance_name")
@@ -188,8 +188,18 @@ class ConfigSectionMeta(ConfigurationFieldABCMeta):
     """Maps config names to their actual variable names"""
     _FIELD_VAR_MAP: dict[str, str]
     """Maps variable names to their actual config names"""
+    _cls_parent: "BaseConfigurationField | ConfigSectionMeta | None"
+    _cls_name: str
+    """The name of the class"""
+    _field_variable: str
+    _has_default: bool
+    _default_value: dict[str, Any] | _NoDefaultValueT
+    _sorting_order: int
 
     if typing.TYPE_CHECKING:
+
+        _name = SectionName()
+        _parent = SectionParent()
 
         def _validate_value(self, value: Any, name: str | None = None, /): ...
 
@@ -200,15 +210,10 @@ class Section(BaseConfigurationField, metaclass=ConfigSectionMeta):
     __slots__ = "_value"
     _name = SectionName()
     """The name in the configuration file (chooses between _real_name and _cls_name)"""
-    _cls_name: str
-    """The name of the class"""
     _instance_name: str
     """The actual name in the configuration file"""
-    _has_default: bool
-    _default_value: dict[str, Any] | _NoDefaultValueT
     _parent = SectionParent()
     _instance_parent: AnyConfigField | None
-    _cls_parent: AnyConfigField | None
 
     _sorting_order = 1
 
@@ -249,7 +254,9 @@ class Section(BaseConfigurationField, metaclass=ConfigSectionMeta):
         cls._has_default = all(field._has_default for field in cls._ALL_FIELDS.values())
         if cls._has_default:
             cls._default_value = {
-                field._name: field._default_value for field in cls._ALL_FIELDS.values()
+                field._name: field._default_value
+                for field in cls._ALL_FIELDS.values()
+                if field._name is not None
             }
         else:
             cls._default_value = NoDefaultValue
@@ -387,7 +394,9 @@ class TableSpec(ConfigurationField, metaclass=ConfigSectionMeta):
         )
         if cls._cls_has_default:
             cls._cls_default_value = {
-                field._name: field._default_value for field in cls._ALL_FIELDS.values()
+                field._name: field._default_value
+               for field in cls._ALL_FIELDS.values()
+               if field._name is not None
             }
         else:
             cls._cls_default_value = NoDefaultValue
