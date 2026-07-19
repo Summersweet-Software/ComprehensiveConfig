@@ -5,7 +5,7 @@ import re
 import sys
 from types import UnionType
 import types
-from typing import Any, Protocol, Self, Type, Union
+from typing import Any, Protocol, Self, Type, Union, overload, override
 import typing
 
 from comprehensiveconfig.validators import (
@@ -138,7 +138,13 @@ class ConfigurationField[T](BaseConfigurationField):
         if self._name is None:
             self._name = name
 
-    def __get__(self, instance, owner) -> T:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> T: ...
+
+    def __get__(self, instance: "Section | None", owner) -> T | Self:
         if instance is None:
             return self
         # Retrieve the value from the instance's dictionary
@@ -193,7 +199,7 @@ class ConfigSectionMeta(ConfigurationFieldABCMeta):
     """The name of the class"""
     _field_variable: str
     _has_default: bool
-    _default_value: dict[str, Any] | _NoDefaultValueT
+    _default_value: dict[str | None, Any] | _NoDefaultValueT
     _sorting_order: int
 
     if typing.TYPE_CHECKING:
@@ -214,7 +220,7 @@ class Section(BaseConfigurationField, metaclass=ConfigSectionMeta):
     """The actual name in the configuration file"""
     _parent = SectionParent()
     _instance_parent: AnyConfigField | None
-
+    _value: dict[str | None, Any]
     _sorting_order = 1
 
     @classmethod
@@ -395,8 +401,8 @@ class TableSpec(ConfigurationField, metaclass=ConfigSectionMeta):
         if cls._cls_has_default:
             cls._cls_default_value = {
                 field._name: field._default_value
-               for field in cls._ALL_FIELDS.values()
-               if field._name is not None
+                for field in cls._ALL_FIELDS.values()
+                if field._name is not None
             }
         else:
             cls._cls_default_value = NoDefaultValue
@@ -459,7 +465,13 @@ class Table[K, V](ConfigurationField):
         self._validate_value(value, self._name)
         return {self.key_type(key): self.value_type(val) for key, val in value.items()}
 
-    def __get__(self, instance, owner) -> dict[K, V]:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> dict[K, V]: ...
+
+    def __get__(self, instance: "Section | None", owner) -> dict[K, V] | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: dict[K, V]):
@@ -508,7 +520,13 @@ class List[T](ConfigurationField):
         self._validate_value(value, self._name)
         return [self.inner_type(val) for val in value]
 
-    def __get__(self, instance, owner) -> list[T]:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> list[T]: ...
+
+    def __get__(self, instance: "Section | None", owner) -> list[T] | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: list[T]):
@@ -539,7 +557,13 @@ class Boolean(ConfigurationField):
 
     _holds: bool
 
-    def __get__(self, instance, owner) -> bool:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> bool: ...
+
+    def __get__(self, instance: "Section | None", owner) -> bool | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: bool):
@@ -560,7 +584,13 @@ class Float(ConfigurationField):
 
     _holds: float
 
-    def __get__(self, instance, owner) -> float:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> float: ...
+
+    def __get__(self, instance: "Section | None", owner) -> float | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: float):
@@ -581,7 +611,13 @@ class Integer(ConfigurationField):
 
     _holds: int
 
-    def __get__(self, instance, owner) -> int:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> int: ...
+
+    def __get__(self, instance: "Section | None", owner) -> int | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: int):
@@ -619,7 +655,13 @@ class Text(ConfigurationField):
         super().__init__(default_value, *args, **kwargs)
         self._regex_pattern = regex
 
-    def __get__(self, instance, owner) -> str:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> str: ...
+
+    def __get__(self, instance: "Section | None", owner) -> str | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: str):
@@ -687,7 +729,13 @@ class PathField(ConfigurationField):
         self._path_type = path_type
         self._path_validator = path_validator
 
-    def __get__(self, instance, owner) -> Path:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> Path: ...
+
+    def __get__(self, instance: "Section | None", owner) -> Path | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: str | Path):
@@ -772,7 +820,13 @@ class ConfigUnion[L, R](ConfigurationField):
         except ValueError:  # if left side fails, try the right
             return self._right_type(*args, **kwargs)
 
-    def __get__(self, instance, owner) -> L | R:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> L | R: ...
+
+    def __get__(self, instance: "Section | None", owner) -> L | R | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: L | R):
@@ -835,7 +889,13 @@ class ConfigEnum[T](ConfigurationField):
     def __call__(self, value: Any):
         return self.get_value(value)
 
-    def __get__(self, instance, owner) -> T:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> T: ...
+
+    def __get__(self, instance: "Section | None", owner) -> T | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: T | Any):
@@ -898,7 +958,13 @@ class ConfigObject[T: ConfigObjectType](ConfigurationField):
             return value
         return self._type.from_config(value)
 
-    def __get__(self, instance, owner) -> T:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> T: ...
+
+    def __get__(self, instance: "Section | None", owner) -> T | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: T | Any):
