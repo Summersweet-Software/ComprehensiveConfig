@@ -8,6 +8,17 @@ from .json import JsonWriter
 from .toml import TomlWriter
 
 
+def autoloaded[T: "ConfigSpec"](cls: type[T]) -> T:
+    """Acts as a temporary fix to issues with autoloaded configuration classes in
+    certain type checkers. This was originally intended to fix mypy typechecking,
+    but mypy doesn't actually check class decorators."""
+    if not cls._AUTO_LOAD:
+        raise ValueError("Decorator expects an autoloaded configuration class.")
+    if cls._INST is None:
+        raise ValueError("Instance was not loaded somehow.")
+    return cls
+
+
 class _ConfigSpecMeta(spec.ConfigSectionMeta):
     """handles getting of attributes"""
 
@@ -60,7 +71,7 @@ class ConfigSpec(spec.Section, metaclass=_ConfigSpecMeta):
         cls,
         **kwargs,
     ):
-        super().__init_subclass__()
+        super().__init_subclass__(**kwargs)
         if not cls._AUTO_LOAD:
             return
 
@@ -75,7 +86,6 @@ class ConfigSpec(spec.Section, metaclass=_ConfigSpecMeta):
             cls._INST = cls(cls._WRITER.load(cls._DEFAULT_FILE))
         if not exists and cls._CREATE_FILE:
             default = cls()
-            print(cls._WRITER)
             cls._WRITER.dump(cls._DEFAULT_FILE, default)
             cls._INST = default
         if not exists and not cls._CREATE_FILE:
@@ -88,7 +98,7 @@ class ConfigSpec(spec.Section, metaclass=_ConfigSpecMeta):
         super().__init__(value or self._default_value)
 
     @classmethod
-    def load(cls, file=None, writer=None, /) -> Self:
+    def load(cls, file=None, writer=None, /, create_file: bool = False) -> Self:
         file = file or cls._DEFAULT_FILE
         writer = writer or cls._WRITER
 
@@ -96,6 +106,13 @@ class ConfigSpec(spec.Section, metaclass=_ConfigSpecMeta):
             raise ValueError("no writer specified")
         if file is None:
             raise Exception("No file specified")
+
+        if cls._CREATE_FILE:
+            exists = os.path.exists(file)
+            if not exists:
+                inst = cls()
+                writer.dump(cls._DEFAULT_FILE, inst)
+                return inst
 
         return cls(writer.load(file))
 

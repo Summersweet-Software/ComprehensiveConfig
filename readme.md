@@ -4,6 +4,26 @@
 
 A simple configuration library that lets you create a pydantic-like model for your configuration.
 
+# Autoloaded Configuration Classes (Typing Issues in Mypy)
+
+There is one particular pitfall I have yet to develop around. Mypy is missing a few essential checks that improve type checking on autoloaded configuration classes. For the time being, I recommend avoiding using mypy with this project until class-decorator annotations work [(something that hasn't worked since 2017)](https://github.com/python/mypy/issues/3135) or until I can manage to create a mypy plugin to work around the issue. Pyright doesn't seem believe anything is wrong. Pyright is the default typechecker used in vscode's pylance extension.
+
+If type checking issues occur on your autoloaded config classes, try using this temporary decorator as a fix:
+```python
+@autoloaded # makes your type checker think `MyConfig` is an instance of itself. (or at least it *should* do that.)
+class MyConfig(ConfigSpec, default_file="test.toml", writer=TomlWriter, create_file=True):
+    ... # impl here
+```
+
+The other option is to just manually load your configuration.
+
+```python
+class MyConfig(ConfigSpec, auto_load=False):
+    ...
+
+config = MyConfig.load("test.toml", TomlWriter, create_file=True) # load and/or create our config file
+```
+
 # Installation
 
 `pip install comprehensiveconfig`
