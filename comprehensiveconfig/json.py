@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+from pathlib import Path
 from typing import Any
 from . import configio
 from . import spec
@@ -31,6 +32,8 @@ class JsonWriter(configio.ConfigurationWriter):
                 return value.name
             case spec.ConfigEnum(_, False):
                 return value.value
+            case Path():
+                return str(value)
             case str() | int() | float() | bool() | datetime() | dict() | None:
                 return value
             case _:
