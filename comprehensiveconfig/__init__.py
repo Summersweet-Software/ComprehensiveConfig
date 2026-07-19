@@ -1,4 +1,3 @@
-from abc import ABCMeta
 import os
 from typing import Any, Self, Type, Union
 
@@ -9,7 +8,18 @@ from .json import JsonWriter
 from .toml import TomlWriter
 
 
-class _ConfigSpecMeta(type):
+def autoloaded[T: "ConfigSpec"](cls: type[T]) -> T:
+    """Acts as a temporary fix to issues with autoloaded configuration classes in
+    certain type checkers. This was originally intended to fix mypy typechecking,
+    but mypy doesn't actually check class decorators."""
+    if not cls._AUTO_LOAD:
+        raise ValueError("Decorator expects an autoloaded configuration class.")
+    if cls._INST is None:
+        raise ValueError("Instance was not loaded somehow.")
+    return cls
+
+
+class _ConfigSpecMeta(spec.ConfigSectionMeta):
     """handles getting of attributes"""
 
     _WRITER: Type[configio.ConfigurationWriter] | None
@@ -22,24 +32,20 @@ class _ConfigSpecMeta(type):
         cls,
         name,
         bases,
-        attrs,
+        namespace,
         default_file: str | None = None,  # automatically load a specific file
         writer=None,
         create_file: bool = False,  # create the default file if not exists
         auto_load: bool = True,
         **kwargs,
     ):
-        cls._DEFAULT_FILE = default_file
-        cls._WRITER = writer
-        cls._INST = None
-        cls._CREATE_FILE = create_file
-        cls._AUTO_LOAD = auto_load
-        return super().__new__(cls, name, bases, attrs)
+        namespace["_INST"] = None
+        namespace["_DEFAULT_FILE"] = default_file
+        namespace["_WRITER"] = writer
+        namespace["_CREATE_FILE"] = create_file
+        namespace["_AUTO_LOAD"] = auto_load
 
-    def __get__(self, instance, owner):
-        if self._INST is None:
-            return self
-        return self._INST
+        return super().__new__(cls, name, bases, namespace)
 
     def __getattribute__(self, name):
         """get attributes from active instance if available"""
@@ -58,11 +64,7 @@ class _ConfigSpecMeta(type):
         return super().__setattr__(name, value)
 
 
-class _ConfigSpecABCMeta(spec.ConfigurationFieldABCMeta, _ConfigSpecMeta):
-    """A combination of ABCMeta and config spec meta"""
-
-
-class ConfigSpec(spec.Section, metaclass=_ConfigSpecABCMeta):
+class ConfigSpec(spec.Section, metaclass=_ConfigSpecMeta):
 
     @classmethod
     def __init_subclass__(
@@ -96,7 +98,7 @@ class ConfigSpec(spec.Section, metaclass=_ConfigSpecABCMeta):
         super().__init__(value or self._default_value)
 
     @classmethod
-    def load(cls, file=None, writer=None, /) -> Self:
+    def load(cls, file=None, writer=None, /, create_file: bool = False) -> Self:
         file = file or cls._DEFAULT_FILE
         writer = writer or cls._WRITER
 
@@ -105,9 +107,18 @@ class ConfigSpec(spec.Section, metaclass=_ConfigSpecABCMeta):
         if file is None:
             raise Exception("No file specified")
 
+        if cls._CREATE_FILE:
+            exists = os.path.exists(file)
+            if not exists:
+                inst = cls()
+                writer.dump(cls._DEFAULT_FILE, inst)
+                return inst
+
         return cls(writer.load(file))
 
-    def save(self, file=None, writer=None, /):
+    def save(
+        self, file=None, writer: Type[configio.ConfigurationWriter] | None = None, /
+    ):
         file = file or self._DEFAULT_FILE
         writer = writer or self._WRITER
 
@@ -146,7 +157,6 @@ class ConfigSpec(spec.Section, metaclass=_ConfigSpecABCMeta):
 __all__ = [
     "ConfigSpec",
     "_ConfigSpecMeta",
-    "_ConfigSpecABCMeta",
     "spec",
     "validators",
     "configio",

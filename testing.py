@@ -1,6 +1,6 @@
 from enum import Enum
 
-from comprehensiveconfig import ConfigSpec
+from comprehensiveconfig import ConfigSpec, autoloaded
 from comprehensiveconfig.json import JsonWriter
 from comprehensiveconfig.spec import (
     Boolean,
@@ -14,6 +14,7 @@ from comprehensiveconfig.spec import (
     ConfigEnum,
 )
 from comprehensiveconfig.toml import TomlWriter
+import comprehensiveconfig.utility
 
 
 class Example(TableSpec):
@@ -27,6 +28,7 @@ class testEnum(Enum):
     bar = "chicken"
 
 
+@autoloaded
 class MyConfigSpec(
     ConfigSpec, default_file="test.toml", writer=TomlWriter, create_file=True
 ):
@@ -66,7 +68,7 @@ class MyConfigSpec(
 
 print(MyConfigSpec.some_field)
 print(MyConfigSpec.MySection.other_field)
-MyConfigSpec.some_field = 12.2
+MyConfigSpec.some_field = 12.0
 print("clump")
 print(MyConfigSpec.some_field)
 print(MyConfigSpec.MySection.other_field)
