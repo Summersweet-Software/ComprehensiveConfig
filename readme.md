@@ -13,8 +13,11 @@ A simple configuration library that lets you create a pydantic-like model for yo
 - [x] Supports static type checking
 - [x] toml writer
 - [x] json writer
-- [x] Number Fields
-- [x] Text Fields (with regex filtering)
+- [x] Number fields
+- [x] Text fields (with regex filtering)
+- [x] File/Folder path fields (`PathField`)
+  - [x] Ability to change validator (unix/linux, windows, agnostic, and current system)
+  - [x] Validate for only files, folder, or accept both.
 - [x] List fields
 - [x] Table fields
 - [x] TableSpec (Model) fields
@@ -22,7 +25,7 @@ A simple configuration library that lets you create a pydantic-like model for yo
 - [x] Include doc comments in Section
 - [x] auto loading
 - [x] initialize default config (with auto loader)
-- [ ] yaml writer
+- [N/a] yaml writer (This will likely be moved to a different library as an extension of comprehensiveconfig!)
 - [ ] Tests targetting mypy and other static type checkers to ensure EVERYTHING looks good across IDE's
 - [x] section list (via a Table field)
 - [x] Field type unions (overwriting normal union syntax)
@@ -85,4 +88,25 @@ x = 10
 # Example credentials section
 email = "example@email.com"
 password = "MyPassword"
+```
+
+# Autoloaded Configuration Classes (Typing Issues in Mypy)
+
+There is one particular pitfall I have yet to develop around. Mypy is missing a few essential checks that improve type checking on autoloaded configuration classes. For the time being, I recommend avoiding using mypy with this project until class-decorator annotations work [(something that hasn't worked since 2017)](https://github.com/python/mypy/issues/3135) or until I can manage to create a mypy plugin to work around the issue. Pyright doesn't seem to believe anything is wrong. Pyright is the default typechecker used in vscode's pylance extension.
+
+If type checking issues occur on your autoloaded config classes, try using this temporary decorator as a fix:
+
+```python
+@autoloaded # makes your type checker think `MyConfig` is an instance of itself. (or at least it *should* do that.)
+class MyConfig(ConfigSpec, default_file="test.toml", writer=TomlWriter, create_file=True):
+    ... # impl here
+```
+
+The other option is to just manually load your configuration.
+
+```python
+class MyConfig(ConfigSpec, auto_load=False):
+    ...
+
+config = MyConfig.load("test.toml", TomlWriter, create_file=True) # load and/or create our config file
 ```

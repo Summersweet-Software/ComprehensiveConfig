@@ -41,6 +41,7 @@ loading as well as complex validators for incoming configuration values.
     :caption: Utilities:
 
     utilities.rst
+    validators.rst
 
 Module
 ********
@@ -83,9 +84,10 @@ Module
 
       Load a specified file (or load default file with default writer)
 
-   .. py:method:: save(file=None, writer=None, /)
+   .. py:method:: save(file=None, writer=None, /, create_file=False)
 
-      Save a specified file (or save default file with default writer)
+      Save a specified file (or save default file with default writer).
+      Has the option to create the file if it does exist.
 
    .. py:method:: reset()
 

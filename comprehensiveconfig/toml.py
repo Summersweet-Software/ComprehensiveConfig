@@ -1,4 +1,5 @@
 import enum
+from pathlib import Path
 import tomllib
 from typing import Any
 from . import configio
@@ -74,7 +75,7 @@ class TomlWriter(configio.ConfigurationWriter):
         match value:
             case bool():
                 return "true" if value else "false"
-            case int() | float():
+            case int() | float() | Path():
                 return str(value)
             case str():
                 return f'"{escape(value)}"'
@@ -152,7 +153,7 @@ class TomlWriter(configio.ConfigurationWriter):
                 return cls.dump_table(table_node, value)
             case spec.Section():
                 return "\n".join(cls.dump_section(field))
-            case spec.ConfigEnum(_, by_name):
+            case spec.ConfigEnum(_, __):
                 return cls.dump_enum(field, value)
             case spec.ConfigurationField():
                 # magic method to make writing new field types possible

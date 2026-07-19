@@ -26,3 +26,4 @@
     :caption: Utilities:
 
     utilities.rst
+    validators.rst

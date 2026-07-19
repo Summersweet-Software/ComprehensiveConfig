@@ -1,10 +1,19 @@
 from abc import ABC, ABCMeta, abstractmethod
 import enum
+from pathlib import Path
 import re
+import sys
 from types import UnionType
 import types
-from typing import Any, Protocol, Self, Type, Union
+from typing import Any, Protocol, Self, Type, Union, overload, override
 import typing
+
+from comprehensiveconfig.validators import (
+    validate_path_agnostic,
+    validate_path_sys_aware,
+    validate_path_unix,
+    validate_path_windows,
+)
 
 
 class _NoDefaultValueT:
@@ -51,9 +60,6 @@ class BaseConfigurationField(ABC):
 
     __slots__ = ("_field_variable", "_parent", "_value")
 
-    _parent: Type["BaseConfigurationField"] | None
-    """The parent to this node"""
-
     _field_variable: None | str
     """The python variable that this field is attached to"""
 
@@ -82,6 +88,8 @@ class ConfigurationField[T](BaseConfigurationField):
         "_inline_doc",
     )
 
+    _parent: "ConfigSectionMeta | None"
+    """The parent to this node"""
     _name: None | str
     """The actual name used inside the configuration
     This has to be valid for whatever config format you use"""
@@ -121,7 +129,7 @@ class ConfigurationField[T](BaseConfigurationField):
         if value is None and not self._nullable:
             raise ValueError(f'Field, "{name or self._name}", is not nullable')
 
-    def __or__(self, value: "type | AnyConfigField") -> "ConfigUnion":
+    def __or__(self, value: "ConfigSectionMeta | AnyConfigField") -> "ConfigUnion":
         return ConfigUnion(self, value)
 
     def __set_name__(self, owner, name):
@@ -130,7 +138,13 @@ class ConfigurationField[T](BaseConfigurationField):
         if self._name is None:
             self._name = name
 
-    def __get__(self, instance, owner) -> T:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> T: ...
+
+    def __get__(self, instance: "Section | None", owner) -> T | Self:
         if instance is None:
             return self
         # Retrieve the value from the instance's dictionary
@@ -150,7 +164,7 @@ class SectionName:
     """Descriptor for section names.
     Chooses between class name and instance name automatically"""
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance, owner) -> str:
         if instance is None:
             return object.__getattribute__(owner, "_cls_name")
         return object.__getattribute__(instance, "_instance_name")
@@ -172,30 +186,41 @@ class SectionParent:
         instance._instance_parent = value
 
 
-class Section(BaseConfigurationField, metaclass=ConfigurationFieldABCMeta):
-    """A baseclass for sections to be defined"""
-
-    __slots__ = "_value"
-
+class ConfigSectionMeta(ConfigurationFieldABCMeta):
     _FIELDS: dict[str, ConfigurationField]
-    _SECTIONS: dict[str, Type]
-    _ALL_FIELDS: dict[str, AnyConfigField | Type]
+    _SECTIONS: dict[str, "ConfigSectionMeta"]
+    _ALL_FIELDS: dict[str, "ConfigurationField | ConfigSectionMeta"]
     _FIELD_NAME_MAP: dict[str, str]
     """Maps config names to their actual variable names"""
     _FIELD_VAR_MAP: dict[str, str]
     """Maps variable names to their actual config names"""
-    _name = SectionName()
-    """The name in the configuration file (chooses between _real_name and _cls_name)"""
+    _cls_parent: "BaseConfigurationField | ConfigSectionMeta | None"
     _cls_name: str
     """The name of the class"""
+    _field_variable: str
+    _has_default: bool
+    _default_value: dict[str | None, Any] | _NoDefaultValueT
+    _sorting_order: int
+
+    if typing.TYPE_CHECKING:
+
+        _name = SectionName()
+        _parent = SectionParent()
+
+        def _validate_value(self, value: Any, name: str | None = None, /): ...
+
+
+class Section(BaseConfigurationField, metaclass=ConfigSectionMeta):
+    """A baseclass for sections to be defined"""
+
+    __slots__ = "_value"
+    _name = SectionName()
+    """The name in the configuration file (chooses between _real_name and _cls_name)"""
     _instance_name: str
     """The actual name in the configuration file"""
-    _has_default: bool
-    _default_value: dict[str, Any] | _NoDefaultValueT
     _parent = SectionParent()
     _instance_parent: AnyConfigField | None
-    _cls_parent: AnyConfigField | None
-
+    _value: dict[str | None, Any]
     _sorting_order = 1
 
     @classmethod
@@ -211,14 +236,14 @@ class Section(BaseConfigurationField, metaclass=ConfigurationFieldABCMeta):
         cls._SECTIONS = {
             field_name: field
             for field_name, field in cls.__dict__.items()
-            if isinstance(field, type) and Section in field.__mro__
+            if isinstance(field, ConfigSectionMeta) and Section in field.__mro__
         }
         cls._ALL_FIELDS = cls._FIELDS | cls._SECTIONS
         for name, field in cls._ALL_FIELDS.items():
             field._field_variable = name
             if field._name is None:
                 field._name = name
-            if isinstance(field, type):
+            if isinstance(field, ConfigSectionMeta):
                 field._cls_parent = cls
             else:
                 field._parent = cls
@@ -235,7 +260,9 @@ class Section(BaseConfigurationField, metaclass=ConfigurationFieldABCMeta):
         cls._has_default = all(field._has_default for field in cls._ALL_FIELDS.values())
         if cls._has_default:
             cls._default_value = {
-                field._name: field._default_value for field in cls._ALL_FIELDS.values()
+                field._name: field._default_value
+                for field in cls._ALL_FIELDS.values()
+                if field._name is not None
             }
         else:
             cls._default_value = NoDefaultValue
@@ -321,64 +348,11 @@ class Section(BaseConfigurationField, metaclass=ConfigurationFieldABCMeta):
         return False
 
 
-class List[T](ConfigurationField):
-    """List field"""
-
-    __slots__ = "inner_type"
-
-    _holds: list[T]
-
-    def __init__(
-        self,
-        default_value: list[T] = [],
-        /,
-        inner_type: AnyConfigField | None = None,
-        *args,
-        **kwargs,
-    ):
-        self.inner_type = fix_unions(inner_type)
-
-        return super().__init__(default_value, *args, **kwargs)
-
-    def __call__(self, value: list[T]) -> list[T]:
-        return [self.inner_type(val) for val in value]
-
-    def __get__(self, instance, owner) -> list[T]:
-        return super().__get__(instance, owner)
-
-    def __set__(self, instance, value: list[T]):
-        super().__set__(instance, value)
-
-    def _validate_value(self, value: Any, name: str | None = None, /):
-        super()._validate_value(value)
-        if not isinstance(value, list):
-            raise ValueError(
-                f"Field: {name or self._name}\nValue was not a valid list: {value}"
-            )
-
-        match self.inner_type:
-            case None:
-                return
-            case type():
-                raise ValueError(self.inner_type)
-
-            case BaseConfigurationField():
-                for c, item in enumerate(value):
-                    self.inner_type._validate_value(item, f"{name or self._name}[{c}]")
-
-
-class TableSpec(ConfigurationField, metaclass=ConfigurationFieldABCMeta):
+class TableSpec(ConfigurationField, metaclass=ConfigSectionMeta):
     """A model/Table"""
 
     __slots__ = ()
 
-    _FIELDS: dict[str, AnyConfigField]
-    _SECTIONS: dict[str, Type]
-    _ALL_FIELDS: dict[str, AnyConfigField | Type]
-    _FIELD_NAME_MAP: dict[str, str]
-    """Maps config names to their actual variable names"""
-    _FIELD_VAR_MAP: dict[str, str]
-    """Maps variable names to their actual config names"""
     _cls_name: str
     """The actual name in the configuration file"""
     _cls_has_default: bool
@@ -399,7 +373,7 @@ class TableSpec(ConfigurationField, metaclass=ConfigurationFieldABCMeta):
         cls._SECTIONS = {
             field_name: field
             for field_name, field in cls.__dict__.items()
-            if isinstance(field, type) and Section in field.__mro__
+            if isinstance(field, ConfigSectionMeta) and Section in field.__mro__
         }
         cls._ALL_FIELDS = cls._FIELDS | cls._SECTIONS
         for name, field in cls._ALL_FIELDS.items():
@@ -426,7 +400,9 @@ class TableSpec(ConfigurationField, metaclass=ConfigurationFieldABCMeta):
         )
         if cls._cls_has_default:
             cls._cls_default_value = {
-                field._name: field._default_value for field in cls._ALL_FIELDS.values()
+                field._name: field._default_value
+                for field in cls._ALL_FIELDS.values()
+                if field._name is not None
             }
         else:
             cls._cls_default_value = NoDefaultValue
@@ -489,7 +465,13 @@ class Table[K, V](ConfigurationField):
         self._validate_value(value, self._name)
         return {self.key_type(key): self.value_type(val) for key, val in value.items()}
 
-    def __get__(self, instance, owner) -> dict[K, V]:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> dict[K, V]: ...
+
+    def __get__(self, instance: "Section | None", owner) -> dict[K, V] | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: dict[K, V]):
@@ -538,7 +520,13 @@ class List[T](ConfigurationField):
         self._validate_value(value, self._name)
         return [self.inner_type(val) for val in value]
 
-    def __get__(self, instance, owner) -> list[T]:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> list[T]: ...
+
+    def __get__(self, instance: "Section | None", owner) -> list[T] | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: list[T]):
@@ -569,7 +557,13 @@ class Boolean(ConfigurationField):
 
     _holds: bool
 
-    def __get__(self, instance, owner) -> bool:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> bool: ...
+
+    def __get__(self, instance: "Section | None", owner) -> bool | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: bool):
@@ -590,7 +584,13 @@ class Float(ConfigurationField):
 
     _holds: float
 
-    def __get__(self, instance, owner) -> float:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> float: ...
+
+    def __get__(self, instance: "Section | None", owner) -> float | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: float):
@@ -611,7 +611,13 @@ class Integer(ConfigurationField):
 
     _holds: int
 
-    def __get__(self, instance, owner) -> int:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> int: ...
+
+    def __get__(self, instance: "Section | None", owner) -> int | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: int):
@@ -636,6 +642,8 @@ class Text(ConfigurationField):
 
     _holds: str
 
+    _regex_pattern: str
+
     def __init__(
         self,
         default_value: str | _NoDefaultValueT = NoDefaultValue,
@@ -647,7 +655,13 @@ class Text(ConfigurationField):
         super().__init__(default_value, *args, **kwargs)
         self._regex_pattern = regex
 
-    def __get__(self, instance, owner) -> str:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> str: ...
+
+    def __get__(self, instance: "Section | None", owner) -> str | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: str):
@@ -665,6 +679,117 @@ class Text(ConfigurationField):
             )
 
 
+class PathField(ConfigurationField):
+    """A Folder/file Path that is validated to ensure it is a valid* filepath
+    validity does not mean the path exists.
+
+    __This is not a bug__
+
+    This is to allow users of this class to decide how *they*
+    want to handle file/folders not existing.
+    For example, they might want to create the folder themselves.
+    A user might also be referencing a file on a *different* filesystem!
+    """
+
+    __slots__ = "_path_type", "_path_validator"
+
+    class PathType(enum.IntEnum):
+        """Determines what you want the path's to point to (files or directories)"""
+
+        directory = enum.auto()
+        file = enum.auto()
+        directory_or_file = enum.auto()
+        """Disables this type of check"""
+
+    class PathValidator(enum.IntEnum):
+        """Determines which validation strategy for the path"""
+
+        windows = enum.auto()
+        unix = enum.auto()
+        agnostic = enum.auto()
+        """Doesn't care if the path is for windows or unix/linux"""
+        current_system = enum.auto()
+        """ensures that the path is valid for the current system/os."""
+
+    _holds: Path
+
+    _path_type: PathType
+    _path_validator: PathValidator
+
+    def __init__(
+        self,
+        default_value: str | Path | _NoDefaultValueT = NoDefaultValue,
+        /,
+        path_type: PathType = PathType.directory_or_file,
+        path_validator: PathValidator = PathValidator.agnostic,
+        *args,
+        **kwargs,
+    ):
+        super().__init__(default_value, *args, **kwargs)
+        self._path_type = path_type
+        self._path_validator = path_validator
+
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> Path: ...
+
+    def __get__(self, instance: "Section | None", owner) -> Path | Self:
+        return super().__get__(instance, owner)
+
+    def __set__(self, instance, value: str | Path):
+        if isinstance(value, str):
+            value = Path(value)
+        super().__set__(instance, value)
+
+    def _validate_value(self, value: Any, name: str | None = None, /):
+        super()._validate_value(value)
+
+        if isinstance(value, str):
+            value = Path(value)
+
+        if not isinstance(value, Path):
+            raise ValueError(
+                f"Field: {name or self._name}\nValue was not a valid Path object: {value}"
+            )
+
+        is_valid = True
+        path_type_name = ""
+
+        # Validate the file path for the specified system
+        match self._path_validator:
+            case PathField.PathValidator.windows:
+                is_valid = validate_path_windows(str(value))
+                path_type_name = "windows "
+            case PathField.PathValidator.unix:
+                is_valid = validate_path_unix(str(value))
+                path_type_name = "unix "
+            case PathField.PathValidator.agnostic:
+                is_valid = validate_path_agnostic(str(value))
+            case PathField.PathValidator.current_system:
+                is_valid = validate_path_sys_aware(str(value))
+                path_type_name = "windows " if sys.platform == "win32" else "unix "
+
+        if not is_valid:
+            raise ValueError(
+                f"Field: {name or self._name}\nValue was not a valid {path_type_name}path: {value}"
+            )
+
+        # verify the type of object the path points to is what we expect.
+        match self._path_type:
+            case PathField.PathType.directory:
+                if value.is_file():
+                    raise ValueError(
+                        f"Field: {name or self._name}\nValue was not a valid directory: {value}"
+                    )
+            case PathField.PathType.file:
+                if value.is_dir():
+                    raise ValueError(
+                        f"Field: {name or self._name}\nValue was not a valid file: {value}"
+                    )
+
+
 class ConfigUnion[L, R](ConfigurationField):
     """union field"""
 
@@ -672,13 +797,13 @@ class ConfigUnion[L, R](ConfigurationField):
 
     _holds: L | R
 
-    _left_type: AnyConfigField | Type
-    _right_type: AnyConfigField | Type
+    _left_type: BaseConfigurationField | ConfigSectionMeta
+    _right_type: BaseConfigurationField | ConfigSectionMeta
 
     def __init__(
         self,
-        left_type: AnyConfigField | Type,
-        right_type: AnyConfigField | Type,
+        left_type: AnyConfigField | ConfigSectionMeta,
+        right_type: AnyConfigField | ConfigSectionMeta,
         *args,
         **kwargs,
     ):
@@ -695,7 +820,13 @@ class ConfigUnion[L, R](ConfigurationField):
         except ValueError:  # if left side fails, try the right
             return self._right_type(*args, **kwargs)
 
-    def __get__(self, instance, owner) -> L | R:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> L | R: ...
+
+    def __get__(self, instance: "Section | None", owner) -> L | R | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: L | R):
@@ -758,7 +889,13 @@ class ConfigEnum[T](ConfigurationField):
     def __call__(self, value: Any):
         return self.get_value(value)
 
-    def __get__(self, instance, owner) -> T:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> T: ...
+
+    def __get__(self, instance: "Section | None", owner) -> T | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: T | Any):
@@ -821,7 +958,13 @@ class ConfigObject[T: ConfigObjectType](ConfigurationField):
             return value
         return self._type.from_config(value)
 
-    def __get__(self, instance, owner) -> T:
+    @overload
+    def __get__(self, instance: None, owner) -> Self: ...
+
+    @overload
+    def __get__(self, instance: "Section", owner) -> T: ...
+
+    def __get__(self, instance: "Section | None", owner) -> T | Self:
         return super().__get__(instance, owner)
 
     def __set__(self, instance, value: T | Any):
@@ -848,6 +991,7 @@ __all__ = [
     "Table",
     "TableSpec",
     "List",
+    "PathField",
     "ConfigEnum",
     "ConfigObject",
 ]

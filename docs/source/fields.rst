@@ -120,6 +120,9 @@ Module
     .. py:attribute:: _holds
         :type: str
 
+    .. py:attribute:: _regex_pattern
+        :type: str
+
 
 .. py:class:: comprehensiveconfig.spec.List[T](default_value: list[T] = [], /, inner_type: AnyConfigField | None = None, **kwargs)
 
@@ -132,6 +135,57 @@ Module
     .. note::
 
         Might require manual annotation if your default value remains an empty list
+
+.. py:class:: comprehensiveconfig.spec.PathField(default_value: Path | str | _NoDefaultValueT = NoDefaultValue, /, path_type: PathField.PathType = PathField.directory_or_file, path_validator: PathField.PathValidator = PathValidator.agnostic, **kwargs)
+
+    :param Path | str | _NoDefaultValueT default_value: The default for this field.
+    :param PathField.PathType path_type: Whether you want to only accept files, directories, or both
+    :param PathField.PathValidator path_validator: Determines how it should validate the path string.
+
+    .. py:attribute:: _holds
+        :type: Path
+
+    .. py:attribute:: _path_type
+        :type: PathField.PathType
+
+    .. py:attribute:: _path_validator
+        :type: PathField.PathValidator
+
+.. py:class:: comprehensiveconfig.spec.PathField.PathType
+
+        This is an enum representing the types of paths we would like to support in this field.
+
+        .. py:data:: directory
+
+            We only want paths to point to directories!
+
+        .. py:data:: file
+
+            We only want paths to point to files!
+
+        .. py:data:: directory_or_file
+
+            Disables specific checks for what the paths are pointing to.
+
+.. py:class:: comprehensiveconfig.spec.PathField.PathValidator
+
+        This is an enum representing the different path validators defined in :py:mod:`comprehensiveconfig.validators`
+
+        .. py:data:: windows
+
+            Paths should only be valid Windows paths.
+
+        .. py:data:: unix
+
+            Paths should only be valid Unix Paths
+
+        .. py:data:: agnostic
+
+            Checks for validity on Unix or Windows (only one needs to be valid).
+
+        .. py:data:: current_system
+
+            Uses the validator corresponding to the current current system.
 
 .. py:class:: comprehensiveconfig.spec.Table[K, V](default_value: dict[K, V] = {}, /, key_type: AnyConfigField | None = None, value_type: AnyConfigField | None = None, **kwargs)
 
