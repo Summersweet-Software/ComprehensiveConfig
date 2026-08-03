@@ -75,10 +75,12 @@ class TomlWriter(configio.ConfigurationWriter):
         match value:
             case bool():
                 return "true" if value else "false"
-            case int() | float() | Path():
+            case int() | float():
                 return str(value)
             case str():
                 return f'"{escape(value)}"'
+            case Path():
+                return f'"{escape(str(value).replace("\\", "/"))}"'
             case list():
                 return f"[{", ".join([str(cls.format_value(field, inner_val)) for inner_val in value])}]"
             case dict():
